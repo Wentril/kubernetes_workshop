@@ -1,0 +1,10 @@
+# kubectl apply --dry-run=server -f examples/invalid_yaml.yaml
+# kubectl apply --dry-run=client -f examples/invalid_yaml.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod-invalid
+spec:
+  containers:
+    - name: nginx
+      # Error: Missing image field `image: nginx`
