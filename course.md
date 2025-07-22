@@ -92,7 +92,7 @@ While a ReplicaSet handles replication and self-healing, it does not provide adv
 #### Deployment
 A Deployment manages a set of Pods to run an application workload, usually one that doesn't maintain state.
 
-A Deployment is a higher-level abstraction that manages Pods and ReplicaSets.
+A Deployment is a higher-level abstraction that manages Pods and ReplicaSets. Hierarchy: `Deployment > ReplicaSet > Pods`
 
 Describe dessired state (e.g., number of replicas, container images, etc.) and the Deployment controller will ensure that the current state matches the desired state.
 
@@ -392,4 +392,149 @@ ReplicaSet controller will delete all pods for the given ReplicaSet.
 ```text
 NAME    READY   STATUS    RESTARTS   AGE
 nginx   1/1     Running   0          42m
+```
+---
+## Deployment
+
+Deployment is a higher-level abstraction that manages Pods and ReplicaSets.
+
+Simple example of a Deployment: [nginx_deployment.yaml](./examples/nginx_deployment.yaml)
+
+```bash
+kubectl apply -f examples/nginx_deployment.yaml
+```
+
+```bash
+kubectl get deployments
+kubectl get deploy
+```
+
+Combined output of get for Deployment, ReplicaSet and Pods:
+
+```bash
+kubectl get deploy,rs,po
+```
+
+```text
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nginx   3/3     3            3           36s
+
+NAME                              DESIRED   CURRENT   READY   AGE
+replicaset.apps/nginx-cb6645bd8   3         3         3       36s
+
+NAME                        READY   STATUS    RESTARTS   AGE
+pod/nginx-cb6645bd8-bsldp   1/1     Running   0          36s
+pod/nginx-cb6645bd8-mhzdc   1/1     Running   0          36s
+pod/nginx-cb6645bd8-zsnl2   1/1     Running   0          36s
+```
+
+### Inspecting a rollout
+
+Lets make a change in the Deployment to downgrade the image version of nginx to `1.28.0`, set value in yaml file: `image: nginx:1.28.0`
+
+After that apply the change:
+
+```bash
+kubectl apply -f examples/nginx_deployment.yaml
+```
+
+You can check the status of the rollout with:
+```bash
+kubectl rollout status deployment nginx --watch=true 
+```
+
+```text
+Waiting for deployment "nginx" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "nginx" rollout to finish: 1 old replicas are pending termination...
+deployment "nginx" successfully rolled out
+```
+
+```bash
+kubectl get deploy,rs,po -o wide # wide to see additional information
+```
+
+```text
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS   IMAGES         SELECTOR
+deployment.apps/nginx   3/3     3            3           6m8s   nginx        nginx:1.28.0   app=nginx-web
+
+NAME                              DESIRED   CURRENT   READY   AGE     CONTAINERS   IMAGES         SELECTOR
+replicaset.apps/nginx-6b66bfb4f   3         3         3       4m38s   nginx        nginx:1.28.0   app=nginx-web,pod-template-hash=6b66bfb4f
+replicaset.apps/nginx-cb6645bd8   0         0         0       6m8s    nginx        nginx:1.29.0   app=nginx-web,pod-template-hash=cb6645bd8
+
+NAME                        READY   STATUS    RESTARTS   AGE     IP            NODE              NOMINATED NODE   READINESS GATES
+pod/nginx-6b66bfb4f-hfk8v   1/1     Running   0          2m21s   10.244.1.25   desktop-worker2   <none>           <none>
+pod/nginx-6b66bfb4f-ptch6   1/1     Running   0          4m38s   10.244.2.25   desktop-worker    <none>           <none>
+pod/nginx-6b66bfb4f-s96mv   1/1     Running   0          2m37s   10.244.1.24   desktop-worker2   <none>           <none>
+```
+
+You can see that the new version of Deployment is running with the new image `nginx:1.28.0`. There is a new ReplicaSet `nginx-6b66bfb4f` which is serving current pods, while the old ReplicaSet `nginx-cb6645bd8` is still present but not serving any Pods.
+
+Historical ReplicaSets are kept to allow rollbacks and to maintain a history of changes. Number of historical ReplicaSets can be controlled by the `revisionHistoryLimit` field in the Deployment spec. By default, it is set to 10.
+
+### Rollback
+
+To rollback to the previous version of the Deployment, you can use the following command:
+
+```bash
+kubectl rollout undo deployment nginx && kubectl rollout status deployment nginx --watch=true
+```
+This will revert the Deployment to the previous version, which in this case is `nginx:1.29.0`.
+
+```text
+deployment.apps/nginx rolled back
+Waiting for deployment "nginx" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "nginx" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "nginx" rollout to finish: 1 old replicas are pending termination...
+deployment "nginx" successfully rolled out
+```
+
+To see the result:
+
+```bash
+kubectl get deploy,rs,po -o wide # wide to see additional information
+```
+
+```text
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES         SELECTOR
+deployment.apps/nginx   3/3     3            3           15m   nginx        nginx:1.29.0   app=nginx-web
+
+NAME                              DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES         SELECTOR
+replicaset.apps/nginx-6b66bfb4f   0         0         0       13m   nginx        nginx:1.28.0   app=nginx-web,pod-template-hash=6b66bfb4f
+replicaset.apps/nginx-cb6645bd8   3         3         3       15m   nginx        nginx:1.29.0   app=nginx-web,pod-template-hash=cb6645bd8
+
+NAME                        READY   STATUS    RESTARTS   AGE   IP            NODE              NOMINATED NODE   READINESS GATES
+pod/nginx-cb6645bd8-mzwxx   1/1     Running   0          39s   10.244.2.27   desktop-worker    <none>           <none>
+pod/nginx-cb6645bd8-xb27f   1/1     Running   0          42s   10.244.2.26   desktop-worker    <none>           <none>
+pod/nginx-cb6645bd8-xqv26   1/1     Running   0          41s   10.244.1.26   desktop-worker2   <none>           <none>
+```
+
+You can see that the Deployment is back to the previous version `nginx:1.29.0`, and the old ReplicaSet `nginx-6b66bfb4f` is no longer serving any Pods.
+
+### Rollouts - Declarative vs Imperative intermezzo
+
+In last example we used imperative command to rollback the Deployment. However, it is recommended to use declarative approach for managing Kubernetes resources.
+
+So instead of using `kubectl rollout undo`, you can modify the Deployment YAML file to revert the image version back to `nginx:1.29.0` and apply it again with `kubectl apply -f examples/nginx_deployment.yaml`.
+
+NOTE: Deployments are smart and so if you change the image version in the Deployment YAML file to `nginx:1.28.0` and apply it again, it will reuse the existing ReplicaSet `nginx-6b66bfb4f` and update the Pods to the new image version without creating a new ReplicaSet. On the other hand, the history revision will be incremented.
+
+```bash
+kubectl rollout history deployment/nginx
+```
+
+```text
+REVISION  CHANGE-CAUSE
+4         <none>
+5         <none>
 ```
