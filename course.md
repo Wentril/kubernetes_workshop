@@ -79,6 +79,16 @@ spec:
       image: nginx
 ```
 
+#### ReplicaSet
+
+A ReplicaSet ensures that a specified number of pod replicas are running at any given time.
+
+A ReplicaSet is a higher-level abstraction that manages Pods, ensuring that the desired number of replicas are running.
+
+f a Pod fails, the ReplicaSet will automatically create a new one to maintain the desired count (this is its self-healing capability).
+
+While a ReplicaSet handles replication and self-healing, it does not provide advanced deployment features like rolling updates or rollbacks. That's why Deployments are built on top of ReplicaSets.
+
 #### Deployment
 A Deployment manages a set of Pods to run an application workload, usually one that doesn't maintain state.
 
@@ -246,4 +256,140 @@ kubectl logs nginx -f  # --follow=false
 
 ```bash
 kubectl delete pod redis  # or -f examples/redis_pod.yaml
+```
+
+## ReplicaSet
+
+Simple example of a ReplicaSet: [nginx_replicaset.yaml](./examples/nginx_replicaset.yaml)
+
+```bash
+kubectl apply -f examples/nginx_replicaset.yaml
+```
+
+```bash
+kubectl get replicaset
+kubectl get rs
+```
+
+Combined output of get for ReplicaSet and Pods:
+
+```bash
+kubectl get rs,po
+```
+
+```text
+NAME    DESIRED   CURRENT   READY   AGE
+nginx   3         3         3       1m
+
+NAME              READY   STATUS             RESTARTS   AGE
+pod/nginx         1/1     Running            0          17m
+pod/nginx-nzvtj   1/1     Running            0          17m
+pod/nginx-c6dc9   1/1     Running            0          17m
+pod/nginx-gr7tb   1/1     Running            0          17m
+```
+
+### Replication in action
+
+#### Maintaining desired state
+
+Try deleting one of the pods and see how ReplicaSet creates a new one to maintain the desired state.
+
+```bash
+kubectl delete pod <pod_name>  # in this example nginx-nzvtj
+```
+
+To observe the ReplicaSet in action, you can run:
+
+```bash
+kubectl get replicaset -w  # -w for watch, also works for pods and other resources
+```
+
+Then in other terminal delete one of the pods and see the output.
+
+```text
+NAME    DESIRED   CURRENT   READY   AGE
+nginx   3         3         3       13m  # original (desired) state
+nginx   3         2         2       13m  # after deleting one pod
+nginx   3         3         2       13m  # after ReplicaSet creates a new pod
+nginx   3         3         3       13m  # back to desired state (pod comes to ready state
+```
+
+```text
+NAME              READY   STATUS             RESTARTS   AGE
+pod/nginx         1/1     Running            0          17m
+pod/nginx-b7ztp   1/1     Running            0          3m27s  # replacement for deleted pod
+pod/nginx-c6dc9   1/1     Running            0          17m
+pod/nginx-gr7tb   1/1     Running            0          17m
+```
+
+#### Updating desired state
+
+Update the ReplicaSet to change the number of replicas:
+
+```yaml
+...
+spec:
+  replicas: 15  # from 3 to 15
+...
+```
+
+```bash
+kubectl apply -f examples/nginx_replicaset.yaml
+```
+
+Showing progress of the update:
+
+```text
+NAME    DESIRED   CURRENT   READY   AGE
+nginx   3         3         3       32m  # initial state
+nginx   15        3         3       32m  # after updating desired state
+nginx   15        3         3       32m
+nginx   15        15        3       32m  # after ReplicaSet creates new pods
+nginx   15        15        4       32m  # first pod ready
+nginx   15        15        5       32m
+nginx   15        15        6       32m
+nginx   15        15        7       32m
+nginx   15        15        8       32m
+nginx   15        15        9       32m
+nginx   15        15        10      32m
+nginx   15        15        11      32m
+nginx   15        15        12      32m
+nginx   15        15        13      32m
+nginx   15        15        14      32m
+nginx   15        15        15      32m  # all pods ready
+```
+
+Showing resulting pods:
+
+```text
+NAME          READY   STATUS    RESTARTS   AGE
+nginx         1/1     Running   0          33m
+nginx-72vnr   1/1     Running   0          77s
+nginx-75tcz   1/1     Running   0          77s
+nginx-b7ztp   1/1     Running   0          20m
+nginx-c6dc9   1/1     Running   0          33m
+nginx-fncrx   1/1     Running   0          77s
+nginx-gr7tb   1/1     Running   0          33m
+nginx-grksl   1/1     Running   0          77s
+nginx-kkr5d   1/1     Running   0          77s
+nginx-kt896   1/1     Running   0          77s
+nginx-n6dtp   1/1     Running   0          77s
+nginx-qfwmm   1/1     Running   0          77s
+nginx-rxz8t   1/1     Running   0          77s
+nginx-s9dgx   1/1     Running   0          77s
+nginx-sgx4j   1/1     Running   0          77s
+nginx-zg2xw   1/1     Running   0          77s
+```
+
+#### Cleaning up
+
+```bash
+kubectl delete replicaset/nginx
+```
+
+ReplicaSet controller will delete all pods for the given ReplicaSet.
+
+```text
+NAME    READY   STATUS    RESTARTS   AGE
+nginx   1/1     Running   0          42m
 ```
