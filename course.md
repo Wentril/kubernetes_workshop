@@ -393,6 +393,11 @@ ReplicaSet controller will delete all pods for the given ReplicaSet.
 NAME    READY   STATUS    RESTARTS   AGE
 nginx   1/1     Running   0          42m
 ```
+
+### ReplicaSet - `labels` intermezzo
+
+See: [labels.md](./special_cases/labels.md)
+
 ---
 ## Deployment
 
