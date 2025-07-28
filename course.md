@@ -1,6 +1,6 @@
-## Introduction to Kubernetes
+# Introduction to Kubernetes
 
-### Introduction/Summary of Container Technologies (Docker), Basics
+## Introduction/Summary of Container Technologies (Docker), Basics
 
 TODO
 
@@ -9,13 +9,13 @@ Container vs Image:
 - **Container**: A running instance of an image, which includes the application and its dependencies.
   - should be immutable and stateless (as much as possible)
 
-### Why Kubernetes? The Need for Orchestration
+## Why Kubernetes? The Need for Orchestration
 
 TODO
 
-### Kubernetes architecture: master and node components
+## Kubernetes architecture: master and node components
 
-#### Control plane and Worker nodes
+### Control plane and Worker nodes
 
 - **Control plane**: manages the Kubernetes cluster, making global decisions about the cluster (e.g., scheduling), detecting and responding to cluster events.
 - **Worker nodes**: run the applications and workloads, managed by the control plane.
@@ -23,7 +23,7 @@ TODO
 
 ![img.png](images/cluster_architecture.png)
 
-#### Control plane components:
+### Control plane components:
 
 - kube-apiserver
   - exposes the Kubernetes API
@@ -35,7 +35,7 @@ TODO
 - kube-controller-manager
   - runs controller processes that handle routine tasks in the cluster
 
-#### Node components:
+### Node components:
 
 - kubelet
   - ensuring that containers are running in a pod according to PodSpec
@@ -46,15 +46,15 @@ TODO
   - responsible for managing the execution and lifecycle of containers 
 
 
-### Installation of Kubernetes (e.g. with Minikube or kubeadm). Ideally, a lab environment provided by the training provider.
+## Installation of Kubernetes (e.g. with Minikube or kubeadm). Ideally, a lab environment provided by the training provider.
 
 TODO decide based on lab environment
 
 The best possible way would be to skip this. Minikube is quite easy to install and use. Alternatively it is possible to run kubernetes in Docker Desktop.
 
-### Get started with Kubernetes: pods, deployments, services
+## Get started with Kubernetes: pods, deployments, services
 
-#### Pod
+### Pod
 Core Concept:
 
 - A Pod is the smallest deployable unit in Kubernetes.
@@ -79,7 +79,7 @@ spec:
       image: nginx
 ```
 
-#### ReplicaSet
+### ReplicaSet
 
 A ReplicaSet ensures that a specified number of pod replicas are running at any given time.
 
@@ -89,7 +89,7 @@ f a Pod fails, the ReplicaSet will automatically create a new one to maintain th
 
 While a ReplicaSet handles replication and self-healing, it does not provide advanced deployment features like rolling updates or rollbacks. That's why Deployments are built on top of ReplicaSets.
 
-#### Deployment
+### Deployment
 A Deployment manages a set of Pods to run an application workload, usually one that doesn't maintain state.
 
 A Deployment is a higher-level abstraction that manages Pods and ReplicaSets. Hierarchy: `Deployment > ReplicaSet > Pods`
@@ -120,12 +120,27 @@ spec:  # ~ ReplicaSet spec
         - containerPort: 80
 ```
 
-#### Service
+### Service
 
+Exposes an application behind a single outward-facing endpoint, even when the workload is split across multiple backends.
 
+A Service provides a stable IP address and DNS name for a set of Pods, allowing them to be accessed consistently. A Service uses labels and selectors to select which Pods it will route traffic to.
 
+A Service can load balance traffic to multiple Pods, ensuring that the application is highly available and scalable.
 
-#### Network model
+If you use a Deployment to run your app, that Deployment can create and destroy Pods dynamically. Because of that you
+don't know the IP addresses of the Pods in advance. A Service provides a stable endpoint to access those Pods.
+
+Imagine situation where you have two sets of pods representing backend and frontend of your application. As pods are ephemeral,
+you need a way to access the backend pods from the frontend pods without knowing and managing their IP addresses. For that you can use a Service. which will serve as a single point of access to the backend pods.
+
+Service Types (How you expose your application):
+- ClusterIP: The default. Exposes the Service on an internal IP address. Only accessible from within the cluster.
+- NodePort: Exposes the Service on a static port on each Node's IP. Accessible from outside the cluster.
+- LoadBalancer: Exposes the Service externally using a cloud provider's load balancer.
+- ExternalName: Maps the Service to a DNS name, allowing you to access an external service by name.
+
+### Network model
 
 - every pod gets its own cluster-wide IP address
 - pod (cluster) network handles communication between pods
@@ -135,11 +150,11 @@ spec:  # ~ ReplicaSet spec
 - Network policies can be used to control traffic between pods and between pods and external world
 
 
-### Hands-on labs: Creating and managing pods and deployments
+## Hands-on labs: Creating and managing pods and deployments
 
 
 ---
-### Kubectl
+## Kubectl
 
 Kubectl is the command-line tool for interacting with Kubernetes clusters.
 
@@ -186,8 +201,14 @@ kubectl explain pod.spec
 
 # Hands-on labs: Creating and managing pods and deployments
 
+## General rules 
 
-## Pods
+### Names
+
+Kubernetes **names** must only contain lowercase alphanumeric characters and -.
+For example, the names 123-abc and web are valid, but 123_abc and -web are not.
+
+# Pods
 
 Simple examples of a Pod: [nginx_pod.yaml](./examples/nginx_pod.yaml) and [redis_pod.yaml](./examples/redis_pod.yaml)
 
@@ -210,7 +231,7 @@ kubectl get pod/nginx
 kubectl get -f examples/nginx_pod.yaml 
 ```
 
-### Accessing the pod
+## Accessing the pod
 
 ```bash
 kubectl proxy
@@ -230,21 +251,21 @@ kubectl port-forward pod/redis 6379:6379
 redis-cli ping
 ```
 
-### `describe` - inspect a pod
+## `describe` - inspect a pod
 
 ```bash
 kubectl describe pod nginx
 kubectl describe pod redis
 ```
 
-### `exec` - connect (ssh) to a pod
+## `exec` - connect (ssh) to a pod
 
 ```bash
 kubectl exec -it nginx -- /bin/bash
 kubectl exec -it redis -- redis-cli  # ping
 ```
 
-### `logs` - inspect logs of a pod
+## `logs` - inspect logs of a pod
 
 ```bash
 kubectl logs nginx
@@ -252,13 +273,15 @@ kubectl logs pod/nginx
 kubectl logs nginx -f  # --follow=false
 ```
 
-### `delete` - delete a pod
+## `delete` - delete a pod
 
 ```bash
 kubectl delete pod redis  # or -f examples/redis_pod.yaml
 ```
 
-## ReplicaSet
+---
+
+# ReplicaSet
 
 Simple example of a ReplicaSet: [nginx_replicaset.yaml](./examples/nginx_replicaset.yaml)
 
@@ -288,9 +311,9 @@ pod/nginx-c6dc9   1/1     Running            0          17m
 pod/nginx-gr7tb   1/1     Running            0          17m
 ```
 
-### Replication in action
+## Replication in action
 
-#### Maintaining desired state
+### Maintaining desired state
 
 Try deleting one of the pods and see how ReplicaSet creates a new one to maintain the desired state.
 
@@ -322,7 +345,7 @@ pod/nginx-c6dc9   1/1     Running            0          17m
 pod/nginx-gr7tb   1/1     Running            0          17m
 ```
 
-#### Updating desired state
+### Updating desired state
 
 Update the ReplicaSet to change the number of replicas:
 
@@ -381,7 +404,7 @@ nginx-sgx4j   1/1     Running   0          77s
 nginx-zg2xw   1/1     Running   0          77s
 ```
 
-#### Cleaning up
+### Cleaning up
 
 ```bash
 kubectl delete replicaset/nginx
@@ -394,12 +417,13 @@ NAME    READY   STATUS    RESTARTS   AGE
 nginx   1/1     Running   0          42m
 ```
 
-### ReplicaSet - `labels` intermezzo
+## ReplicaSet - `labels` intermezzo
 
 See: [labels.md](./special_cases/labels.md)
 
 ---
-## Deployment
+
+# Deployment
 
 Deployment is a higher-level abstraction that manages Pods and ReplicaSets.
 
@@ -433,7 +457,7 @@ pod/nginx-cb6645bd8-mhzdc   1/1     Running   0          36s
 pod/nginx-cb6645bd8-zsnl2   1/1     Running   0          36s
 ```
 
-### Inspecting a rollout
+## Inspecting a rollout
 
 Lets make a change in the Deployment to downgrade the image version of nginx to `1.28.0`, set value in yaml file: `image: nginx:1.28.0`
 
@@ -482,7 +506,7 @@ You can see that the new version of Deployment is running with the new image `ng
 
 Historical ReplicaSets are kept to allow rollbacks and to maintain a history of changes. Number of historical ReplicaSets can be controlled by the `revisionHistoryLimit` field in the Deployment spec. By default, it is set to 10.
 
-### Rollback
+## Rollback
 
 To rollback to the previous version of the Deployment, you can use the following command:
 
@@ -526,7 +550,7 @@ pod/nginx-cb6645bd8-xqv26   1/1     Running   0          41s   10.244.1.26   des
 
 You can see that the Deployment is back to the previous version `nginx:1.29.0`, and the old ReplicaSet `nginx-6b66bfb4f` is no longer serving any Pods.
 
-### Rollouts - Declarative vs Imperative intermezzo
+## Rollouts - Declarative vs Imperative intermezzo
 
 In last example we used imperative command to rollback the Deployment. However, it is recommended to use declarative approach for managing Kubernetes resources.
 
