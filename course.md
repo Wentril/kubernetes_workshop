@@ -136,6 +136,7 @@ you need a way to access the backend pods from the frontend pods without knowing
 
 Service Types (How you expose your application):
 - ClusterIP: The default. Exposes the Service on an internal IP address. Only accessible from within the cluster.
+  - headless service if `.spec.clusterIP: "None"` 
 - NodePort: Exposes the Service on a static port on each Node's IP. Accessible from outside the cluster.
 - LoadBalancer: Exposes the Service externally using a cloud provider's load balancer.
 - ExternalName: Maps the Service to a DNS name, allowing you to access an external service by name.
@@ -567,3 +568,79 @@ REVISION  CHANGE-CAUSE
 4         <none>
 5         <none>
 ```
+
+---
+
+# Services
+
+```text
+kubectl apply -f examples/nginx_service_clusterip.yaml
+```
+
+```bash
+kubectl get services
+kubectl get svc
+```
+
+Use `describe` command to inspect details of the service:
+```bash
+kubectl describe service nginx-clusterip-service
+```
+
+The service is of type `ClusterIP`, which means it is only accessible from within the cluster. `ClusterIP` is the default service type.
+
+```text
+Name:                     nginx-clusterip-service
+Namespace:                default
+Labels:                   app=nginx-web
+Annotations:              <none>
+Selector:                 app=nginx-web
+Type:                     ClusterIP
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.96.62.253
+IPs:                      10.96.62.253
+Port:                     <unset>  80/TCP
+TargetPort:               80/TCP
+Endpoints:                10.244.1.2:80,10.244.1.3:80,10.244.2.2:80
+Session Affinity:         None
+Internal Traffic Policy:  Cluster
+Events:                   <none>
+```
+
+You can see that the endpoints are the IP addresses of the Pods that are selected by the service.
+
+```text
+NAME                        READY   STATUS    RESTARTS        AGE     IP           NODE              NOMINATED NODE   READINESS GATES
+pod/nginx-cb6645bd8-9cfx6   1/1     Running   2               2d23h   10.244.1.2   desktop-worker2   <none>           <none>
+pod/nginx-cb6645bd8-fqd5q   1/1     Running   2               2d23h   10.244.1.3   desktop-worker2   <none>           <none>
+pod/nginx-cb6645bd8-g9gsc   1/1     Running   2 (5h11m ago)   2d23h   10.244.2.2   desktop-worker    <none>           <none>
+```
+
+## Accessing the service
+
+To access the service from within the cluster, you can use the service name as a DNS name. For example, if you have a Pod that is running in the same namespace, you can use the following command to access the service:
+
+```bash
+kubectl exec -it <pod_name> -- curl http://nginx-clusterip-service
+```
+
+or use the proxy:
+
+See: http://127.0.0.1:8001/api/v1/namespaces/default/services/nginx-clusterip-service/proxy/
+(dont forget to start `kubectl proxy`)
+
+## Other service types
+
+### NodePort
+
+TODO lets see if it makes sense to use NodePort in the lab environment
+TODO See: [nodeport_service.md](./special_cases/nodeport_service)
+
+### ExternalName
+
+See: [externalName_service.md](./special_cases/externalname_service)
+
+### LoadBalancer
+
+TODO lets see if it makes sense to use LoadBalancer in the lab environment

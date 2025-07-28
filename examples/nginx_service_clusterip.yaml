@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-clusterip-service # Name of your Service
+  labels:
+    app: nginx-web # Label for the Service itself
+spec:
+  selector:
+    app: nginx-web # CRITICAL: This matches the 'app: nginx-web' label on your Pods
+  ports:
+    - protocol: TCP
+      port: 80 # The port this Service itself will listen on
+      targetPort: 80 # The port your container (Nginx) is listening on inside the Pod
+  type: ClusterIP # Explicitly setting ClusterIP, though it's the default
