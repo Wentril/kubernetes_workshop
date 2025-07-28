@@ -102,16 +102,16 @@ kind: Deployment
 metadata:
   name: nginx-deployment
   labels:
-    app: nginx
+    app: nginx-web
 spec:  # ~ ReplicaSet spec
   replicas: 3
   selector:
     matchLabels:
-      app: nginx
+      app: nginx-web
   template:  # PodTemplateSpec
     metadata:
       labels:
-        app: nginx
+        app: nginx-web
     spec:  # Pod spec
       containers:
       - name: nginx
@@ -141,7 +141,24 @@ Service Types (How you expose your application):
 - LoadBalancer: Exposes the Service externally using a cloud provider's load balancer.
 - ExternalName: Maps the Service to a DNS name, allowing you to access an external service by name.
 
-### Network model
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-clusterip-service # Name of your Service
+  labels:
+    app: nginx-web # Label for the Service itself
+spec:
+  selector:
+    app: nginx-web # CRITICAL: This matches the 'app: nginx-web' label on your Pods
+  ports:
+    - protocol: TCP
+      port: 80 # The port this Service itself will listen on
+      targetPort: 80 # The port your container (Nginx) is listening on inside the Pod
+  type: ClusterIP # Explicitly setting ClusterIP, though it's the default
+```
+
+#### Network model
 
 - every pod gets its own cluster-wide IP address
 - pod (cluster) network handles communication between pods
