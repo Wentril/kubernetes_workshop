@@ -167,11 +167,67 @@ spec:
 - Gateways and Ingresses provide external access to services
 - Network policies can be used to control traffic between pods and between pods and external world
 
+### Ingress
+
+An API object that manages external access to the services in a cluster, typically HTTP.
+
+An Ingress allows you to define rules for routing external HTTP/S traffic to specific services based on the request's host and path.
+
+In the image there is an example of Ingress that routes traffic to one Service.
+
+![img.png](images/ingress.png)
+
+Additionally, ingress can be configured to give Services externally-reachable URLs, provide SSL termination, load balancing, and other features.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: / # Rewrites the request path to '/'
+spec:
+  ingressClassName: nginx # Important: Specifies which Ingress Controller handles this Ingress
+  rules:
+  - http:
+      paths:
+      - path: / # Route traffic for the root path
+        pathType: Prefix # Matches any path starting with '/'
+        backend:
+          service:
+            name: nginx-clusterip-service # The name of your ClusterIP Service
+            port:
+              number: 80 # The port of that Service
+    host: nginx.example.com # The hostname you'll use to access the service
+```
+
+#### Ingress Controller
+
+In order to make Ingress work, you need to have an Ingress Controller running in your cluster. The Ingress Controller is responsible for fulfilling the Ingress rules and routing the traffic to the appropriate Services.
+
+Ingress Controllers are not part of the Kubernetes core, but are implemented as separate components. Ingress Controllers can be implemented using various technologies, such as NGINX, Traefik, HAProxy, or cloud provider-specific solutions.
+
+Kubernetes as a project supports and maintains AWS, GCE, and [nginx](https://github.com/kubernetes/ingress-nginx) ingress controllers.
+
+[ingress-nginx](https://github.com/kubernetes/ingress-nginx) project is being [discontinued](https://github.com/kubernetes/ingress-nginx/issues/13002) in favor of [ingate](https://github.com/kubernetes-sigs/ingate) project.
+
+
+
+#### Gateway API
+
+It is designed to be a more flexible and extensible successor to the original `Ingress API`, providing advanced traffic management, better CRD extensibility, and improved support for modern networking use cases.
+`Gateway API` is still evolving and is not yet as widely adopted as `Ingress`, but it is intended to become the standard for service networking in Kubernetes.
+
+The `ingress-nginx` controller uses the original `Ingress API`, while `ingate` is designed to support the newer `Gateway API` in Kubernetes.
+
+---
+
+TODO probably separate hands-ons from theory
 
 ## Hands-on labs: Creating and managing pods and deployments
 
-
 ---
+
 ## Kubectl
 
 Kubectl is the command-line tool for interacting with Kubernetes clusters.
@@ -661,3 +717,106 @@ See: [externalName_service.md](./special_cases/externalname_service)
 ### LoadBalancer
 
 TODO lets see if it makes sense to use LoadBalancer in the lab environment
+
+---
+
+# Ingress
+
+Before you can use Ingress, you need to have an Ingress Controller running in your cluster. The Ingress Controller is responsible for fulfilling the Ingress rules and routing the traffic to the appropriate Services.
+
+You can investigate if the Ingress Controller is present by running:
+
+```bash
+kubectl get pods -n ingress-nginx  # -n option is for namespace, it can be different in your cluster
+kubectl get deployments -n ingress-nginx
+kubectl get ingressclass
+```
+
+If there is a running Ingress Controller, you should see something like this:
+
+```text
+NAME                                        READY   STATUS    RESTARTS   AGE
+ingress-nginx-controller-54fc99577f-gwks2   1/1     Running   0          11m
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+ingress-nginx-controller   1/1     1            1           11m
+
+NAME    CONTROLLER             PARAMETERS   AGE
+nginx   k8s.io/ingress-nginx   <none>       11m
+```
+
+If you have ingress controller running, you skip the installation section.
+
+## Install ingress-nginx controller
+
+See: [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/) installation instructions
+
+### Installation using Helm:
+
+```bash
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx --create-namespace
+```
+
+### Installation using kubectl:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.13.0/deploy/static/provider/cloud/deploy.yaml
+```
+
+### Other methods
+
+You can also get ingress-nginx controller by installing specific addons (e.g. for minikube or MicroK8s) or they can be provided by your cloud provider.
+
+## Ingress example
+
+Apply the example Ingress resource to route traffic to the nginx service:
+
+```text
+kubectl apply -f examples/nginx_ingress.yaml
+```
+
+See the Ingress resource:
+
+```bash
+kubectl get ingress
+kubectl get ing
+```
+
+```text
+NAME            CLASS   HOSTS               ADDRESS      PORTS   AGE
+nginx-ingress   nginx   nginx.example.com   172.20.0.7   80      5s
+```
+
+Use `describe` command to inspect details of the ingress:
+```bash
+kubectl describe ingress nginx-ingress
+```
+
+```text
+Name:             nginx-ingress
+Labels:           <none>
+Namespace:        default
+Address:          172.20.0.7
+Ingress Class:    nginx
+Default backend:  <default>
+Rules:
+  Host               Path  Backends
+  ----               ----  --------
+  nginx.example.com
+                     /   nginx-clusterip-service:80 (10.244.2.3:80,10.244.2.4:80,10.244.1.4:80)
+Annotations:         nginx.ingress.kubernetes.io/rewrite-target: /
+Events:
+  Type    Reason  Age   From                      Message
+  ----    ------  ----  ----                      -------
+  Normal  Sync    17s   nginx-ingress-controller  Scheduled for sync
+```
+
+Visit: http://localhost/ (localhost works when docker desktop kubernetes is used)
+
+NOTE: try different ingress rules, hostnames, paths, and path types.
+
+## Ingress rules, path types, wildcards and other details
+
+See: [ingress_details.md](./special_cases/ingress_details.md) TODO
