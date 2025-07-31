@@ -310,7 +310,7 @@ kubectl get -f examples/nginx_pod.yaml
 ```bash
 kubectl proxy
 ```
-See: http://localhost:8001/api/v1/namespaces/default/pods/nginx-pod/proxy/
+See: http://localhost:8001/api/v1/namespaces/default/pods/nginx/proxy/
 
 ```bash
 kubectl port-forward pod/nginx 8000:80
@@ -646,6 +646,8 @@ REVISION  CHANGE-CAUSE
 
 # Services
 
+Simple example of a Service: [nginx_service_clusterip.yaml](./examples/nginx_service_clusterip.yaml)
+
 ```text
 kubectl apply -f examples/nginx_service_clusterip.yaml
 ```
@@ -770,6 +772,8 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 You can also get ingress-nginx controller by installing specific addons (e.g. for minikube or MicroK8s) or they can be provided by your cloud provider.
 
 ## Ingress example
+
+Simple example of an Ingress resource: [nginx_ingress.yaml](./examples/nginx_ingress.yaml)
 
 Apply the example Ingress resource to route traffic to the nginx service:
 

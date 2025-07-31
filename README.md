@@ -1,5 +1,10 @@
 # Kubernetes workshop
 
+using Kubernetes v1.31.1
+
+## References:
+https://kubernetes.io/docs/
+
 ## Scope:
 
 ### Introduction to Kubernetes
