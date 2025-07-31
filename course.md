@@ -824,3 +824,113 @@ NOTE: try different ingress rules, hostnames, paths, and path types.
 ## Ingress rules, path types, wildcards and other details
 
 See: [ingress_details.md](./special_cases/ingress_details.md) TODO
+
+---
+
+# Kubernetes resources and application management
+
+This section will transition participants from understanding basic application deployment (Pods, Deployments, Services, Ingress) to managing application configurations, sensitive data, persistent storage, and using higher-level packaging tools for more complex deployments.
+
+## Advanced Resources: ConfigMaps, Secrets, Persistent Volumes
+
+### ConfigMap
+
+A ConfigMap is a Kubernetes resource that allows you to store configuration data in key-value pairs. It is used to decouple configuration from image content, making applications more portable and easier to manage. It should contain **only non-confidential** data (any type of secret **SHOULD NOT** be there).
+
+Pods can consume configuration data from ConfigMaps in several ways:
+- environment variables
+- command-line arguments
+- files in a volume
+- through the Kubernetes API (dynamically during runtime)
+
+As the motivation for using ConfigMaps, consider the following example. Imagine there is a web application that needs to connect to a database. Instead of hardcoding the database host in the application code, you can store it in a ConfigMap and reference it in the Pod specification. Thanks to that with simple change in ConfigMap you can change the configuration of the application without rebuilding the image. This mechanism becomes be very useful when developing the app locally and deploying it to different environments (e.g. development, staging, production).
+
+Example of a ConfigMap:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-config
+data:
+  # property-like keys; each key maps to a simple value
+  DATABASE_HOST: "db.example.com"
+  other_service_url: "http://other-service.example.com"
+  
+  # file-like keys; each key maps to a file content
+  config.txt: |
+    # This is a configuration file
+    setting1=value1
+    setting2=value2
+```
+
+In pod specification, you can reference the ConfigMap in several ways:
+- as single environment variables:
+  - uses `env` block and references a specific key from the ConfigMap:
+  ```yaml
+  #spec.containers[].env:
+  env:
+    - name: DATABASE_HOST
+      valueFrom:
+        configMapKeyRef:
+          name: example-config
+          key: DATABASE_HOST
+  ```
+- as a set of environment variables:
+  - uses `envFrom` block and imports all keys from the ConfigMap as environment variables:
+  ```yaml
+  #spec.containers[].envFrom:
+  envFrom:
+    - configMapRef:
+        name: myconfigmap 
+  ```
+- as a files with volume mounted into the Pod:
+  - uses `volumes` and `volumeMounts` blocks to mount the ConfigMap as a file system volume:
+
+  ```yaml
+  #spec.containers[].volumeMounts:
+  - name: foo  # Name of the volume to mount
+    mountPath: /etc/config  # Path inside the container where the ConfigMap will be mounted
+    readOnly: true  # Optional, but recommended to prevent accidental changes
+  
+  #spec.volumes[]:
+  - name: config-volume
+    configMap:
+      name: example-config  # Name of the ConfigMap to use
+      items:  # Optional, to specify which keys to include 
+        - key: config.txt
+          path: config.txt  # Mounts the 'config.txt' key as a file named 'config.txt'
+  ```
+  - if items field is ommited, all keys from the ConfigMap will be mounted as files in the specified mountPath, with each key becoming a file named after the key.
+  ```yaml
+  #spec.containers[].volumeMounts:
+  - name: foo
+    mountPath: /etc/config
+    readOnly: true
+  
+  #spec.volumes[]:
+  - name: foo
+    configMap:
+      name: example-config
+      # ommited items field, so all keys will be mounted as files
+  ```
+
+#### Immutable ConfigMaps
+
+It is possible to create an immutable ConfigMap, which means that once it is created, it cannot be changed. This can be useful for ensuring that configuration data does not change unexpectedly.
+
+Benefits of immutable ConfigMaps:
+- Prevents accidental changes to configuration data
+- Improves performance by allowing Kubernetes to close watches for the immutable ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  ...
+data:
+  ...
+immutable: true  # Makes the ConfigMap immutable
+```
+
+NOTE: ConfigMap are not supposed to store large amounts of data (cannot exceed 1 MiB). If you need to store large configuration files, consider using a Persistent Volume or separate database.
