@@ -833,6 +833,41 @@ This section will transition participants from understanding basic application d
 
 ## Advanced Resources: ConfigMaps, Secrets, Persistent Volumes
 
+### Volumes
+
+Docs: [kubernetes volumes](https://kubernetes.io/docs/concepts/storage/volumes/)
+
+Kubernetes volumes enable containers within a pod to access and share data through the filesystem. Various volume types serve different needs, including:
+
+- creating configuration files from a ConfigMap or Secret
+- offering temporary storage space for a pod
+- sharing filesystems between containers in the same pod
+- sharing filesystems between pods, even across nodes
+- persisting data so it remains available after pod restarts or replacements
+- supplying configuration details to applications based on pod metadata (e.g., informing a sidecar of its namespace)
+- granting read-only access to data from another container image
+
+From the above mentioned use cases, there are two important requirements that volumes address:
+1. **Persistence**: Data should remain available even after the pod is deleted or restarted.
+2. **Sharing**: Data should be accessible by multiple containers within the same pod or across different pods.
+
+Thanks to the Kubernetes volume abstraction both requirements can be fulfilled. The Volume abstraction allows you to define a storage resource that can be used by one or more containers in a Pod. Unlike a container's filesystem, which is ephemeral and tied to the lifecycle of the container, a Volume exists independently of any individual container and can persist data across container restarts.
+
+There are different types of Volumes available in Kubernetes, each with its own use case. In this basic course following will be covered:
+- `persistentVolumeClaim`: A volume that is backed by a Persistent Volume (PV). It allows you to use persistent storage that can be shared across multiple Pods and survive Pod restarts.
+- `configMap`: A volume that contains configuration data from a ConfigMap. It allows you to inject configuration files into the Pod.
+- `secret`: A volume that contains sensitive data from a Secret. It allows you to inject sensitive data into the Pod without exposing it in the Pod specification.
+
+Plus some honorary mentions of other types of volumes (TODO move to special cases):
+- `emptyDir`: A temporary directory that is created when a Pod is assigned to a Node and exists as long as the Pod is running. It is useful for sharing data between containers in the same Pod.
+- `hostPath`: A directory on the Node's filesystem that is mounted into the Pod. It allows you to access files on the Node's filesystem from within the Pod which also make it very dangerous, as it can lead to security issues and data loss if not used carefully.
+- `nfs`: A volume that allows you to mount an NFS share into the Pod. It is useful for sharing data between Pods across different Nodes.
+- `local`: A volume that allows you to use a local disk on the Node as a storage resource. It is useful for storing data that is specific to a single Node and does not need to be shared across Nodes.
+
+### Persistent Volume Claim (PVC) and Persistent Volume (PV)
+
+TODO
+
 ### ConfigMap
 
 A ConfigMap is a Kubernetes resource that allows you to store configuration data in key-value pairs. It is used to decouple configuration from image content, making applications more portable and easier to manage. It should contain **only non-confidential** data (any type of secret **SHOULD NOT** be there).
@@ -934,3 +969,7 @@ immutable: true  # Makes the ConfigMap immutable
 ```
 
 NOTE: ConfigMap are not supposed to store large amounts of data (cannot exceed 1 MiB). If you need to store large configuration files, consider using a Persistent Volume or separate database.
+
+### Secret
+
+TODO
