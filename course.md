@@ -1062,4 +1062,137 @@ NOTE: ConfigMap are not supposed to store large amounts of data (cannot exceed 1
 
 ### Secret
 
-TODO
+Secrets are Kubernetes resources used to store sensitive information, such as passwords, tokens, secret keys, and other confidential data. They are designed to keep sensitive data secure and separate from application code.
+
+Secrets are very similar to ConfigMaps, but they are specifically intended for sensitive data. They can be consumed by Pods in a similar way as ConfigMaps, such as through environment variables or mounted as files in a volume.
+
+By default, Secrets are stored unencrypted in Kubernetes etcd. Because of that anyone who has access to the Kubernetes API can read or modify the Secrets. Kubernetes suggest following best practices to secure Secrets:
+- Use encryption at rest to encrypt Secrets in etcd.
+- Use RBAC (Role-Based Access Control) to restrict access to Secrets.
+- Restrict Secrets to only the Pods that need them.
+- Use external Secret store solutions like HashiCorp Vault, AWS Secrets Manager, or Azure Key Vault for managing sensitive data.
+
+Good practices for using Secrets: can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/security/secrets-good-practices/).
+
+#### Types of Secrets
+
+Secrets can have different types, which determine how they are used and what data they can contain. The most common types of Secrets provided as built-ins by Kubernetes are:
+
+| Built-in Type                      | Usage                                 |
+|-------------------------------------|---------------------------------------|
+| Opaque                             | arbitrary user-defined data           |
+| kubernetes.io/service-account-token| ServiceAccount token                  |
+| kubernetes.io/dockercfg            | serialized ~/.dockercfg file          |
+| kubernetes.io/dockerconfigjson     | serialized ~/.docker/config.json file |
+| kubernetes.io/basic-auth           | credentials for basic authentication  |
+| kubernetes.io/ssh-auth             | credentials for SSH authentication    |
+| kubernetes.io/tls                  | data for a TLS client or server       |
+| bootstrap.kubernetes.io/token      | bootstrap token data                  |
+From [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/secret/#secret-types)
+
+You can also create your own custom Secret types by specifying a `type` field in the Secret manifest. Empty string defaults to `Opaque` type.
+
+#### Opaque Secret
+
+Default type of secrets. 
+
+Try to create a simple Opaque Secret with username and password:
+- If created with yaml file, you need to encode the values in base64 format.
+  ```yaml
+  apiVersion: v1
+  kind: Secret
+  metadata:
+    name: my-secret
+  type: Opaque
+  data:
+    username: bXl1c2Vy   # base64 for 'myuser'
+    password: bXlwYXNzd29yZA==   # base64 for 'mypassword'
+  ```
+- If you are creating it through `kubectl create` you need to add `generic` subcommand to specify that you are creating `Opaque` Secret. In this case base64 encoding is done automatically.
+  ```bash
+  kubectl create secret generic my-secret \
+    --from-literal=username=myuser \
+    --from-literal=password=mypassword
+  ```
+And check the resulting Secret:
+```bash
+kubectl get secret
+```
+```text
+NAME        TYPE     DATA   AGE
+my-secret   Opaque   2      2s
+```
+Data column show the number of key-value pairs in the Secret.
+
+Describe the created Secret:
+```bash
+kubectl describe secret/my-secret
+```
+```text
+Name:         my-secret
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+password:  10 bytes
+username:  6 bytes
+```
+
+TODO at least ServiceAccount, DockerConfig in security section
+
+#### Using Secrets in Pods
+
+Pods can consume Secrets in a similar way as ConfigMaps, such as through environment variables or mounted as files in a volume.
+
+In case of secret not being available, the Pod will not start and kubelet will be attempting to restart the Pod until the Secret becomes available or the Pod is deleted.
+
+To use a Secret in a Pod you can:
+- add secret reference in `env` block to set environment variables:
+  ```yaml
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: my-secret-env-pod
+  spec:
+    containers:
+    - name: my-app-container
+      image: busybox
+      command: ["sh", "-c", "echo 'The secret data is: ' && echo $username"]
+      envFrom:
+      - secretRef:
+          name: my-secret
+  ```
+- mount the Secret as a volume in the Pod:
+  ```yaml
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: my-secret-volume-pod
+  spec:
+    containers:
+    - name: my-app-container
+      image: busybox
+      command: ["sh", "-c", "echo 'The secret data is: ' && cat /etc/secret-volume/username"]
+      volumeMounts:
+      - name: secret-volume
+        mountPath: "/etc/secret-volume"
+        readOnly: true
+    volumes:
+    - name: secret-volume
+      secret:
+        secretName: my-secret
+  ```
+
+Investigate logs after creatinh both pods `kubectl logs my-secret-env-pod` and `kubectl logs my-secret-volume-pod`.
+
+#### `imagePullSecrets ` - accessing private container registries
+
+When you need to pull images from a private container registry, you can use `imagePullSecrets` in the Pod specification. This allows Kubernetes to authenticate with the private registry using the credentials stored in a Secret.
+
+See [Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/) for more details.
+
+TODO maybe example

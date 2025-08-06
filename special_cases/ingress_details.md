@@ -44,7 +44,7 @@ There are three path types that can be used in Ingress rules:
   - e.g. `/foo` will match `/foo`, `/foo/bar`, but not `/Foo` or `/bar/foo`
 - `ImplementationSpecific` - the path matching is defined by the specific ingress controller implementation
 
-for more examplse see [KPath type examples](https://kubernetes.io/docs/concepts/services-networking/ingress/#examples) in Kubernetes ingress documentation
+for more examplse see [Path type examples](https://kubernetes.io/docs/concepts/services-networking/ingress/#examples) in Kubernetes ingress documentation
 
 ## Hostname wildcards
 
