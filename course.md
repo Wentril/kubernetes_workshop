@@ -1196,3 +1196,154 @@ When you need to pull images from a private container registry, you can use `ima
 See [Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/) for more details.
 
 TODO maybe example
+
+## Kubernetes namespace and resource isolation
+
+Namespaces are a core feature of Kubernetes that provide a way to divide a cluster's resources into virtual sub-clusters. Think of them as a way to logically isolate resources within a single physical cluster. They are a fundamental tool for organizing and managing resources for different teams, projects, or applications.
+
+Resources like Pods, Services, and Deployments exist within a namespace (always). When you don't specify a namespace, your resources are created in the default namespace.
+
+To create namespace you can use the following YAML manifest:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-namespace
+```
+
+or directly throught `kubectl` command:
+```bash
+kubectl create namespace my-namespace
+```
+
+Either way, you can check the created namespace with:
+
+```bash
+kubectl get namespaces
+```
+
+As a result you should see something like this:
+```text
+NAME                 STATUS   AGE
+default              Active   21d
+ingress-nginx        Active   9d
+kube-node-lease      Active   21d
+kube-public          Active   21d
+kube-system          Active   21d
+my-namespace         Active   4s
+```
+
+There are 4 initial namespaces created by Kubernetes:
+- `default`: The default namespace for resources that do not have a specific namespace assigned. All of our workloads were deployed here so far
+  - avoid using the default namespace, create own
+- `kube-system`: Contains resources created by Kubernetes itself, such as the control plane components and add-ons.
+- `kube-public`: A namespace that is readable by all users (including unauthenticated users). It is mostly used for public resources.
+- `kube-node-lease`: Contains lease objects associated with each node in the cluster. It is used to determine the health of nodes.
+
+Then there is a namespace used by the Ingress controller (refer to ingress section):
+- `ingress-nginx`: Namespace used by the Ingress controller, if it is installed.
+
+And finally, you can see our new namespace `my-namespace`
+
+Let's describe it
+```bash
+kubectl describe namespace my-namespace
+```
+```text
+Name:         my-namespace
+Labels:       kubernetes.io/metadata.name=my-namespace
+Annotations:  <none>
+Status:       Active
+
+No resource quota.
+
+No LimitRange resource.
+```
+
+### Namespaces and DNS
+
+Whenever you create a service in Kubernetes, it is automatically assigned a DNS name that can be used to access it. The DNS name is constructed using the service name, namespace name, and the cluster domain.
+
+The DNS entry will be of the form: `<service-name>.<namespace-name>.svc.cluster.local`
+
+Where:
+- `<service-name>` is the name of the service
+- `<namespace-name>` is the name of the namespace where the service is located
+- `svc` is a fixed part of the DNS name that indicates it is a service
+- `cluster.local` is the default cluster domain, which can be changed in the cluster configuration
+
+If you want to reach service `my-service` in the `my-namespace` namespace, you can use the following DNS name: `my-service.my-namespace.svc.cluster.local`.
+
+On top of that, if your communication is within the same namespace, you can use just the service name: `my-service`.
+
+### Namespace use cases
+
+Namespaces are useful for organizing resources, isolating environments, and managing access control. Here are some common use cases:
+- **Environment Isolation**: You can create separate namespaces for different environments, such as development, staging, and production. This allows you to isolate resources and avoid conflicts between environments.
+- **Team Isolation**: You can create namespaces for different teams or projects, allowing them to manage their resources independently. This is especially useful in larger organizations where multiple teams share the same cluster.
+- **Resource Quotas**: You can set resource quotas for each namespace to limit the amount of resources (CPU, memory, etc.) that can be used by the resources in that namespace. This helps prevent one team or project from consuming all the cluster resources.
+- **Access Control**: You can use Role-Based Access Control (RBAC) to restrict access to resources in a namespace. This allows you to control who can create, read, update, or delete resources in a specific namespace.
+- **Network Policies**: You can use network policies to control the traffic between resources in different namespaces. This allows you to enforce security policies and isolate resources from each other.
+- **Resource Organization**: You can use namespaces to organize resources logically, making it easier to manage and find resources in a large cluster.
+
+### How to use namespace
+
+When creating a resource using yaml manifest, you can specify the namespace in the metadata section:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: my-namespace # Specify the namespace here
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.29.0
+```
+Apply the manifest above and then, try `kubectl get po` and `kubectl get po -n my-namespace`. You will get following outputs respectively:
+```text
+No resources found in default namespace.
+```
+```text
+NAME    READY   STATUS    RESTARTS   AGE
+nginx   1/1     Running   0          56s
+```
+
+#### Changing default namespace
+
+If you don't specify namespace in the commands with `-n <namespace>`, it assumes the `default` namespace. To avoid specifying the namespace every time, you can set the current namespace context using:
+
+```bash
+kubectl config set-context --current --namespace=my-namespace
+```
+
+After this both commands from above will return the same result, as the current namespace is set to `my-namespace`.
+
+But for the rest of the workshop please set the namespace back to `default`:
+
+```bash
+kubectl config set-context --current --namespace=default
+```
+
+#### Contradictory namespace specification
+
+In general you can set the namespace of the resource which you are creating either in the YAML manifest or by using the `-n` flag with `kubectl` commands. But it won't work if you specify it in both places and it will be different.
+```bash
+kubectl apply -f examples/<manifest>.yaml -n default  # where `metadata.namespace` is set to `my-namespace`
+```
+You will get an error like this:
+```text
+error: the namespace from the provided object "my-namespace" does not match the namespace "default". You must pass '--namespace=my-namespace' to perform this operation.
+```
+
+## Application management with Helm (package manager for Kubernetes)
+
+## Hands-on labs: creating and managing ConfigMaps, Secrets, and Helm charts
+
+## Best practices for application management in Kubernetes
+
+https://kubernetes.io/docs/setup/best-practices/
+
+Configuration best practices https://kubernetes.io/docs/concepts/configuration/overview/
