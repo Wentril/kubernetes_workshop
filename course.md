@@ -1199,6 +1199,8 @@ TODO maybe example
 
 ## Kubernetes namespace and resource isolation
 
+Simple example of an Namespace resource: [namespace.yaml](./examples/namespace.yaml)
+
 Namespaces are a core feature of Kubernetes that provide a way to divide a cluster's resources into virtual sub-clusters. Think of them as a way to logically isolate resources within a single physical cluster. They are a fundamental tool for organizing and managing resources for different teams, projects, or applications.
 
 Resources like Pods, Services, and Deployments exist within a namespace (always). When you don't specify a namespace, your resources are created in the default namespace.
@@ -1337,6 +1339,10 @@ You will get an error like this:
 ```text
 error: the namespace from the provided object "my-namespace" does not match the namespace "default". You must pass '--namespace=my-namespace' to perform this operation.
 ```
+
+### ResourceQuota and LimitRange intermezzo
+
+See: [ResourceQuota and LimitRange](./examples/resource_quotas_and_limit_ranges.md)
 
 ## Application management with Helm (package manager for Kubernetes)
 
