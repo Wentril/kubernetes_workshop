@@ -1346,9 +1346,425 @@ See: [ResourceQuota and LimitRange](./examples/resource_quotas_and_limit_ranges.
 
 ## Application management with Helm (package manager for Kubernetes)
 
+[Helm](https://helm.sh/) is a package manager for Kubernetes that simplifies the deployment and management of applications on Kubernetes clusters. It allows you to define, install, and upgrade complex applications using reusable templates called charts.
+
+You can think about helm as an equivalent of `apt` or `yum` for Kubernetes, where you can install applications from repositories, manage their configurations, and upgrade them easily.
+
+Instead of writing, managing, and applying dozens of YAML files for a single application (e.g., a web app, database, and cache), Helm allows you to define, install, and upgrade that entire application with a single command.
+
+Additionally with the possibility to use templating, you can create reusable charts that can be customized for different environments or configurations.
+
+### Using Helm
+
+https://helm.sh/docs/intro/quickstart/
+
+You can search for available repositories with:
+```bash
+helm repo list
+```
+```text
+Error: no repositories to show
+```
+
+To add a repository, you can use the `helm repo add` command. For example, to add the Bitnami repository, which contains many popular Helm charts, you can run:
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+```
+```text
+"bitnami" has been added to your repositories
+```
+Now the bitnami repo is available in the list
+```bash
+helm repo list
+```
+```text
+NAME    URL                               
+bitnami https://charts.bitnami.com/bitnami
+```
+
+It is a good practice to update the repository to get the latest charts:
+```bash
+helm repo update  
+```
+```text
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "bitnami" chart repository
+Update Complete. ⎈Happy Helming!⎈
+```
+
+We can search for available charts in the Bitnami repository:
+```bash
+helm search repo bitnami
+```
+```text
+NAME                                            CHART VERSION   APP VERSION     DESCRIPTION                                       
+bitnami/airflow                                 25.0.0          3.0.4           Apache Airflow is a tool to express and execute...
+bitnami/apache                                  11.4.6          2.4.65          Apache HTTP Server is an open-source HTTP serve...
+bitnami/apisix                                  5.1.4           3.13.0          Apache APISIX is high-performance, real-time AP...
+bitnami/appsmith                                7.0.1           1.84.0          Appsmith is an open source platform for buildin...
+bitnami/argo-cd                                 10.0.0          3.0.12          Argo CD is a continuous delivery tool for Kuber...
+...
+```
+
+To install a Helm chart, you can use the `helm install <release_name> <chart_name>` command. For example, to install the MySQL chart from the Bitnami repository, you can run:
+```bash
+helm install mysql-chart bitnami/mysql
+```
+```text
+NAME: mysql-chart
+LAST DEPLOYED: Tue Aug 12 15:21:42 2025
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+CHART NAME: mysql
+CHART VERSION: 14.0.2
+APP VERSION: 9.4.0
+...
+```
+This command will deploy the MySQL chart with the release name `mysql-chart` in the `default` namespace. Helm will create all the necessary Kubernetes resources, such as Pods, Services, and ConfigMaps, based on the chart templates.
+
+To inspect the deployed resources, you can use the following commands:
+```bash
+helm list
+kubectl get pods
+```
+```text
+NAME            NAMESPACE       REVISION        UPDATED                                         STATUS          CHART           APP VERSION
+mysql-chart     default         1               2025-08-12 15:21:42.966993997 +0200 CEST        deployed        mysql-14.0.2    9.4.0
+```
+```text
+NAME            READY   STATUS    RESTARTS   AGE
+mysql-chart-0   1/1     Running   0          31s
+```
+
+To uninstall the Helm release, you can use the `helm uninstall <release_name>` command. For example, to uninstall the MySQL chart, you can run:
+```bash
+helm uninstall mysql-chart
+```
+```text
+release "mysql-chart" uninstalled
+```
+
+### Creating your own Helm chart
+
+You can create your own Helm chart using the `helm create <chart_name>` command. This will generate a basic chart structure with templates and values files.
+
+Let's create a simple Helm chart for a web application:
+```bash
+helm create my-first-chart
+```
+A new directory `my-first-chart` will be created with the following structure:
+```text
+my-first-chart/
+├── charts/
+├── templates/
+│   ├── _helpers.tpl
+│   ├── deployment.yaml
+│   ├── hpa.yaml
+│   ├── ingress.yaml
+│   ├── NOTES.txt
+│   ├── service.yaml
+│   ├── serviceaccount.yaml
+│   └── tests/
+│       └── test-connection.yaml
+├── Chart.yaml
+├── .helmignore
+└── values.yaml
+```
+
+Let's take a look at the important files in the chart:
+- `Chart.yaml`: Contains metadata about the chart, such as name, version, and description.
+- `values.yaml`: Contains default values for the chart. These values can be overridden when installing the chart.
+  - all the templates in the `templates/` directory are referencing the values from this file.
+- `.helmignore`: Specifies files and directories to ignore when packaging the chart. (similar to `.gitignore` and `.dockerignore` files)
+
+Then in the directory `templates/` you can find the templates for the Kubernetes resources that will be created when the chart is installed. Most of the templates are very similar to the yaml manifests we have seen so far, but they use Helm's templating syntax to allow for dynamic values based on the `values.yaml` file.
+
+Partial example of a Deployment template:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my-first-chart.fullname" . }}
+  labels:
+    {{- include "my-first-chart.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "my-first-chart.selectorLabels" . | nindent 6 }}
+  template:
+    ...
+```
+
+Apart from yaml files, you can also find two other files in the `templates/` directory:
+- `_helpers.tpl`: Contains helper templates that can be used in other templates. It is a good place to define reusable functions and variables.
+- `NOTES.txt`: Contains notes that will be displayed after the chart is installed. It can be used to provide instructions or information about the deployed application.
+
+### Modifying the chart
+
+Let's try to modify the chart and deploy it. Open the `values.yaml` file and find the following section:
+```yaml
+image:
+  repository: nginx
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+```
+
+Setup the `tag` field to a specific version of the nginx image, for example `1.29.0` as in previous manifest examples:
+```yaml
+image:
+  repository: nginx
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "1.29.0"
+```
+
+You can see that the `tag` is used in the `deployment.yaml` template in block `.spec.template.spec.containers`:
+```yaml
+containers:
+  - name: {{ .Chart.Name }}
+    image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+```
+
+It is good practice to check the templates before installing the chart, to see what will be created. You can do that with the `helm template` command:
+```bash
+helm template my-first-chart ./my-first-chart/
+```
+
+To see our change in action we have to install the chart.
+```bash
+helm install my-first-chart ./my-first-chart
+```
+```text
+NAME: my-first-chart
+LAST DEPLOYED: Wed Aug 13 10:41:49 2025
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=my-first-chart,app.kubernetes.io/instance=my-first-chart" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace default $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace default port-forward $POD_NAME 8080:$CONTAINER_PORT
+```
+```bash
+kubectl get deploy,rs,po,svc,ingress
+```
+```text
+NAME                             READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS       IMAGES         SELECTOR
+deployment.apps/my-first-chart   1/1     1            1           101s   my-first-chart   nginx:1.29.0   app.kubernetes.io/instance=my-first-chart,app.kubernetes.io/name=my-first-chart
+
+NAME                                        DESIRED   CURRENT   READY   AGE    CONTAINERS       IMAGES         SELECTOR
+replicaset.apps/my-first-chart-85764564fb   1         1         1       101s   my-first-chart   nginx:1.29.0   app.kubernetes.io/instance=my-first-chart,app.kubernetes.io/name=my-first-chart,pod-template-hash=85764564fb
+
+NAME                                  READY   STATUS    RESTARTS   AGE    IP           NODE             NOMINATED NODE   READINESS GATES
+pod/my-first-chart-85764564fb-tv5tj   1/1     Running   0          101s   10.244.2.6   desktop-worker   <none>           <none>
+
+NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE    SELECTOR
+service/kubernetes          ClusterIP      10.96.0.1       <none>        443/TCP   27d    <none>
+service/my-first-chart      ClusterIP      10.96.164.229   <none>        80/TCP    101s   app.kubernetes.io/instance=my-first-chart,app.kubernetes.io/name=my-first-chart
+```
+
+You can see that the image used in the deployment is now `nginx:1.29.0` as we specified in the `values.yaml` file. In this case the ingress was not deployed because it was not enabled in the `values.yaml` file.
+
+But we can still access out nginx using the port-forwarding command provided in the notes:
+```bash
+kubectl --namespace <namespace> port-forward pod/<pod_name> 8080:80
+```
+
+Now visit http://127.0.0.1:8080. Alternatively you can use kube proxy or other methods to access the service.
+
+### Helm context and namespaces
+
+Helm operates directly in the context of your kubectl configuration. It reads the same kubeconfig file that kubectl uses.
+
+As a result of that also a default namespace is the same as the one used by kubectl. If you want to install a Helm chart in a specific namespace, you can use the `--namespace` (similarly to the kubectl) flag when installing the chart:
+
+```bash
+kubectl create namespace dev
+
+helm install my-first-chart ./my-first-chart --namespace dev
+```
+
+or you can run the helm install command with additional option `--create-namespace` to create the namespace if it does not exist:
+
+```bash
+helm install my-first-chart ./my-first-chart --namespace prod --create-namespace
+```
+
+Let's check the deployments in all namespaces:
+
+```bash
+kubectl get deploy --all-namespaces
+```
+```text
+NAMESPACE            NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+default              my-first-chart             1/1     1            1           96m
+dev                  my-first-chart             1/1     1            1           14s
+ingress-nginx        ingress-nginx-controller   1/1     1            1           15d
+kube-system          coredns                    2/2     2            2           27d
+local-path-storage   local-path-provisioner     1/1     1            1           27d
+prod                 my-first-chart             1/1     1            1           11s
+```
+
+Additionally, you can set the namespace of different resources through `values.yaml` and it's respective templates. It can be useful when you want to use more of `as a code` approach and have all your resources defined in the chart, but don't forget that the namespace of helm release itself is still defined either through flag `--namespace` or by default context namespace. In theory, it is possible to have releases in different namespaces than resources, but it is not a common practice.
+
+### Helm and value overrides
+
+As we have already seen, Helm charts can be customized using the `values.yaml` file. On top of that, additional value files can be used to override the default value file. You can specify multiple value files using the `-f` or `--values` flag when installing or upgrading a Helm chart or you can override specific values using the `--set` flag.
+
+There is an order of precedence for value overriding in Helm:
+1. Chart's `values.yaml` file. It is always used automatically when installing or upgrading a chart.
+2. Values files specified with `-f` or `--values` flag (in the order they are specified)
+3. Command-line overrides using `--set` flag (these have the highest precedence)
+
+So possible command to install a chart with custom values could look like this:
+```bash
+helm install my-first-chart ./my-first-chart \
+  -f ./my-first-chart/values.dev.yaml \
+  -f ./my-first-chart/values.eng.yaml \
+  --set image.tag=1.29.0 \
+```
+
+In the example of this command helm will first load the default values from `values.yaml`, then override them with values from `values.dev.yaml` and `values.eng.yaml` files, and finally override the `image.tag` value with `1.29.0`.
+
+Overriding of values is a powerful feature of Helm that allows you to customize the behavior of your applications without modifying the chart itself. It is especially useful when deploying the same application in different environments (e.g., development, staging, production) with different configurations.
+
+### Helm and environments
+
+When deploying applications in different environments, it is common to have a different values file for each environment.
+
+In our example, we could introduce two additional values files:
+- `values.dev.yaml`: Contains values specific to the development environment. 
+  ```yaml
+  replicaCount: 2
+  ```
+- `values.prod.yaml`: Contains values specific to the production environment.
+  ```yaml
+  replicaCount: 3
+  ```
+
+Then you can install the chart in the development environment using:
+```bash
+helm install my-first-chart ./my-first-chart -f ./my-first-chart/values.dev.yaml --namespace dev #--create-namespace
+```
+
+And in the production environment using:
+
+```bash
+helm install my-first-chart ./my-first-chart -f ./my-first-chart/values.prod.yaml --namespace dev #--create-namespace
+```
+
+After that you can check the pods in each namespace:
+```bash
+kubectl get po -n dev -o wide
+kubectl get po -n prod -o wide
+```
+```text
+NAME                              READY   STATUS    RESTARTS   AGE     IP           NODE              NOMINATED NODE   READINESS GATES
+my-first-chart-85764564fb-mmgwz   1/1     Running   0          2m34s   10.244.1.6   desktop-worker2   <none>           <none>
+my-first-chart-85764564fb-xfzj2   1/1     Running   0          2m34s   10.244.2.9   desktop-worker    <none>           <none>
+```
+```text
+NAME                              READY   STATUS    RESTARTS   AGE     IP            NODE              NOMINATED NODE   READINESS GATES
+my-first-chart-85764564fb-fkr5h   1/1     Running   0          2m25s   10.244.1.8    desktop-worker2   <none>           <none>
+my-first-chart-85764564fb-hkp5c   1/1     Running   0          2m25s   10.244.2.10   desktop-worker    <none>           <none>
+my-first-chart-85764564fb-hshwh   1/1     Running   0          2m25s   10.244.1.7    desktop-worker2   <none>           <none>
+```
+
+### Helm release management - `upgrade`, `rollback` and `history`
+Now if we decide to modify the chart by changing a value, for example increasing the number of replicas in the `prod` environment, we can do that by modifying the `values.prod.yaml` file:
+```yaml
+replicaCount: 5
+```
+
+Then we can upgrade the release using the `helm upgrade` command:
+```bash
+helm upgrade my-first-chart ./my-first-chart -f ./my-first-chart/values.prod.yaml --namespace prod
+```
+In the output you can see that the revision number got increased:
+```text
+Release "my-first-chart" has been upgraded. Happy Helming!
+NAME: my-first-chart
+LAST DEPLOYED: Wed Aug 13 13:30:13 2025
+NAMESPACE: prod
+STATUS: deployed
+REVISION: 2
+...
+```
+And the pods get replicated to match the new number of replicas:
+```bash
+kubectl get po -n prod -o wide
+```
+
+```text
+NAME                              READY   STATUS    RESTARTS   AGE     IP            NODE              NOMINATED NODE   READINESS GATES
+my-first-chart-85764564fb-fkr5h   1/1     Running   0          6m16s   10.244.1.8    desktop-worker2   <none>           <none>
+my-first-chart-85764564fb-hkp5c   1/1     Running   0          6m16s   10.244.2.10   desktop-worker    <none>           <none>
+my-first-chart-85764564fb-hshwh   1/1     Running   0          6m16s   10.244.1.7    desktop-worker2   <none>           <none>
+my-first-chart-85764564fb-pwprb   1/1     Running   0          3s      10.244.2.11   desktop-worker    <none>           <none>
+my-first-chart-85764564fb-x4vkr   1/1     Running   0          3s      10.244.1.9    desktop-worker2   <none>           <none>
+```
+
+Alternatively you can use the upgrade command with flag `--install` to install the chart if it is not already installed, or just upgrade it if it is already installed.
+```bash
+helm upgrade my-first-chart ./my-first-chart -f ./my-first-chart/values.prod.yaml --namespace prod
+```
+
+Even though that we haven't changed anything with second upgrade, the revision number will be increased again. The current revision history can be checked with command `helm history <release_name>` where you need to use namespace flag if operating in other than default namespace:
+
+```bash
+helm history my-first-chart -n prod
+```
+```text
+REVISION        UPDATED                         STATUS          CHART                   APP VERSION     DESCRIPTION     
+1               Wed Aug 13 13:25:29 2025        superseded      my-first-chart-0.1.0    1.16.0          Install complete
+2               Wed Aug 13 13:30:13 2025        superseded      my-first-chart-0.1.0    1.16.0          Upgrade complete
+3               Wed Aug 13 13:31:42 2025        deployed        my-first-chart-0.1.0    1.16.0          Upgrade complete
+```
+
+To rollback to a previous revision, you can use the `helm rollback <release_name> <revision_number>` command. For example, to rollback to revision 1, you can run:
+
+```bash
+helm rollback my-first-chart 1 --namespace prod
+```
+
+The helm history will be updated accordingly:
+```text
+REVISION        UPDATED                         STATUS          CHART                   APP VERSION     DESCRIPTION     
+1               Wed Aug 13 13:25:29 2025        superseded      my-first-chart-0.1.0    1.16.0          Install complete
+2               Wed Aug 13 13:30:13 2025        superseded      my-first-chart-0.1.0    1.16.0          Upgrade complete
+3               Wed Aug 13 13:31:42 2025        superseded      my-first-chart-0.1.0    1.16.0          Upgrade complete
+4               Wed Aug 13 13:36:20 2025        deployed        my-first-chart-0.1.0    1.16.0          Rollback to 1
+```
+And pod replicas will be reverted to the previous number:
+```text
+NAME                              READY   STATUS    RESTARTS   AGE     IP            NODE              NOMINATED NODE   READINESS GATES
+my-first-chart-85764564fb-fkr5h   1/1     Running   0          12m     10.244.1.8    desktop-worker2   <none>           <none>
+my-first-chart-85764564fb-hkp5c   1/1     Running   0          12m     10.244.2.10   desktop-worker    <none>           <none>
+my-first-chart-85764564fb-pwprb   1/1     Running   0          5m56s   10.244.2.11   desktop-worker    <none>           <none>
+```
+
+You can see that even with rollback the revision number is increased, and the status of the previous revisions is set to `superseded`.
+
+While the rollback is very powerful command it has some drawbacks. Similar to rollouts and rollbacks of Deployments, the `helm rollback` command is an imperative one and so it breaks the declarative configuration model of Kubernetes. This means that the state of the cluster after the rollback may not match the state defined in the chart's templates and values files. So it is generally better to use it only in case of emergency and not as a regular way of managing releases. A good example to use it is when a release goes wrong you can quickly rollback to the last working state to decrease the downtime to minimum. But after that it is necessary align your configuration with it.
+
 ## Hands-on labs: creating and managing ConfigMaps, Secrets, and Helm charts
 
+TODO: Already done in previous sections, skipping it here.
+
 ## Best practices for application management in Kubernetes
+
+TODO extend this section with more details
 
 https://kubernetes.io/docs/setup/best-practices/
 
