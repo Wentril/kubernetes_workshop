@@ -1769,3 +1769,34 @@ TODO extend this section with more details
 https://kubernetes.io/docs/setup/best-practices/
 
 Configuration best practices https://kubernetes.io/docs/concepts/configuration/overview/
+
+---
+# Kubernetes Security
+
+This section will cover the security aspects of Kubernetes, including authentication, authorization, network policies, and security contexts.
+
+## Introduction to Kubernetes security
+
+Kubernetes security is the practice of protecting a cluster and its workloads from unauthorized access, malicious attacks, and accidental misconfigurations. It's not a single tool but a layered approach that involves securing every component of the cluster, from the network to the individual containers
+
+The security of Kubernetes is a shared responsibility between the cluster administrators, application developers, and users. Each layer of the Kubernetes architecture has its own security considerations and best practices.
+
+The most important aspects of Kubernetes security include:
+
+- **Authentication and Authorization**: Ensuring that only authorized users and applications can access the cluster and its resources.
+- **Role-Based Access Control (RBAC)**: Defining fine-grained access control policies to restrict what users and applications can do within the cluster.
+- **Security Contexts and Pod Isolation**: Configuring security settings for Pods and containers to enforce isolation and limit the impact of potential security breaches.
+- **Pod Admission Controls**: Validating and enforcing security policies on Pods before they are created or updated.
+- **Network Policies**: Controlling the traffic flow between Pods and Services to enforce security boundaries.
+
+## Authentication and authorization with Kubernetes
+
+## RBAC (Role-Based Access Control) in Kubernetes
+
+## Security contexts and pod isolation, pod admission controls
+
+## Network policies and network security in Kubernetes
+
+remember namespaces
+
+## Hands-on labs: Configuration of RBAC/Security Context and network security policies
