@@ -43,14 +43,113 @@ TODO
       - maintains network rules on nodes, allowing communication to pods
       - implements part of the Kubernetes Service concept
 - Container runtime (e.g., Docker, containerd)
-  - responsible for managing the execution and lifecycle of containers 
+  - responsible for managing the execution and lifecycle of containers
 
 
 ## Installation of Kubernetes (e.g. with Minikube or kubeadm). Ideally, a lab environment provided by the training provider.
 
-TODO decide based on lab environment
+To work with Kubernetes on your local machine, you'll need more than a single command. The setup involves two main parts: first you need a local Kubernetes cluster (`Minikube`), and second, you need the tools to interact with it (`kubectl`).
 
-The best possible way would be to skip this. Minikube is quite easy to install and use. Alternatively it is possible to run kubernetes in Docker Desktop.
+This part of the workshop will show you how to install Minikube, which creates a Kubernetes cluster on your machine. You'll also install kubectl, the command-line tool you'll use to manage all your applications and resources on the cluster.
+
+### Install kubectl
+
+Before installing Kubernetes, it is good to have `kubectl` installed. `kubectl` is the command-line tool for interacting with Kubernetes clusters. So we will use it no matter what Kubernetes installation method we choose.
+
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+```
+
+```bash
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+```
+
+```bash
+kubectl version --client
+```
+
+### Install minikube
+
+Minikube is a tool that makes it easy to run Kubernetes locally. It creates a VM or runs a container on your local machine and deploys a Kubernetes cluster inside it. This is a great way to learn and experiment with Kubernetes without needing a full setup.
+
+Before the installation of Minikube, we need to have at least one of the drivers installed https://minikube.sigs.k8s.io/docs/drivers/. One of the preferred solutions is to use Docker as a driver. If you don't have it yet, please consult the Docker installation guide for your OS: https://docs.docker.com/engine/install/
+
+If you have docker installed, make sure that your user is added to the `docker` group, so you can run Docker commands without `sudo`. If you are not sure, you can run the following command:
+
+```bash
+sudo usermod -aG docker $USER && newgrp docker
+```
+
+Now let's install Minikube. The following commands will download the latest version of Minikube and install it on your system:
+
+```bash
+curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
+```
+
+Once installed start the minikube with:
+
+```bash 
+minikube start
+```
+
+If everything goes well, you should see output similar to this:
+```text
+😄  minikube v1.36.0 on Ubuntu 24.04 (amd64)
+✨  Automatically selected the docker driver. Other choices: none, ssh
+📌  Using Docker driver with root privileges
+👍  Starting "minikube" primary control-plane node in "minikube" cluster
+🚜  Pulling base image v0.0.47 ...
+💾  Downloading Kubernetes v1.33.1 preload ...
+    > gcr.io/k8s-minikube/kicbase...:  502.26 MiB / 502.26 MiB  100.00% 68.97 M
+    > preloaded-images-k8s-v18-v1...:  347.04 MiB / 347.04 MiB  100.00% 38.71 M
+🔥  Creating docker container (CPUs=2, Memory=2200MB) ...
+🐳  Preparing Kubernetes v1.33.1 on Docker 28.1.1 ...
+    ▪ Generating certificates and keys ...
+    ▪ Booting up control plane ...
+    ▪ Configuring RBAC rules ...
+🔗  Configuring bridge CNI (Container Networking Interface) ...
+🔎  Verifying Kubernetes components...
+    ▪ Using image gcr.io/k8s-minikube/storage-provisioner:v5
+🌟  Enabled addons: storage-provisioner, default-storageclass
+💡  kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'
+🏄  Done! kubectl is now configured to use "minikube" cluster and "default" namespace by default
+```
+
+To test that everything is working correctly, you can run:
+
+```bash
+minikube kubectl -- get po -A
+```
+or if you have already installed `kubectl` you can run:
+
+```bash
+kubectl get po -A
+```
+This should show you the pods running in the `kube-system` namespace, which are the components of the Kubernetes cluster.
+
+To clean everything up, you can stop and delete the Minikube cluster with:
+
+```bash
+minikube delete --all
+```
+
+You can manage the minikube cluster further but for that please refer to the [Minikube documentation](https://minikube.sigs.k8s.io/docs) as it is out of the scope of this workshop.
+
+We will use Minikube for the rest of the workshop, but you can also use other methods to install Kubernetes, such as `kubeadm`, `k3s`, or managed Kubernetes services like AWS EKS, GKE, or Azure AKS. The concepts and commands will be similar, but the installation process may vary.
+
+If you continue with minikube, launch a new cluster with the following command:
+
+```bash
+minikube start --nodes=3
+```
+
+Additionally, run this command, we will explain it later:
+```bash
+kubectl taint nodes minikube node-role.kubernetes.io/control-plane:NoSchedule
+```
+
+This starts minikube with two nodes so we can later demonstrate even some advanced features like multi-node deployments, etc.
 
 ## Get started with Kubernetes: pods, deployments, services
 
@@ -752,6 +851,13 @@ If you have ingress controller running, you skip the installation section.
 ## Install ingress-nginx controller
 
 See: [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/) installation instructions
+
+### Installation in Minikube
+If you are using Minikube, you can enable the Ingress addon:
+
+```bash
+minikube addons enable ingress
+```
 
 ### Installation using Helm:
 

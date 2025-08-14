@@ -3,7 +3,9 @@
 using Kubernetes v1.31.1
 
 ## References:
-https://kubernetes.io/docs/
+- https://kubernetes.io/docs/
+- https://minikube.sigs.k8s.io/docs/
+- https://helm.sh/docs/
 
 ## Scope:
 
