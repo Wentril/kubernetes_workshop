@@ -1448,7 +1448,7 @@ error: the namespace from the provided object "my-namespace" does not match the 
 
 ### ResourceQuota and LimitRange intermezzo
 
-See: [ResourceQuota and LimitRange](./examples/resource_quotas_and_limit_ranges.md)
+See: [ResourceQuota and LimitRange](./special_cases/resource_quotas_and_limit_ranges.md)
 
 ## Application management with Helm (package manager for Kubernetes)
 
@@ -1896,6 +1896,247 @@ The most important aspects of Kubernetes security include:
 - **Network Policies**: Controlling the traffic flow between Pods and Services to enforce security boundaries.
 
 ## Authentication and authorization with Kubernetes
+
+One of the most important acpects of Kubernetes security is the ability ti contol access to the Kubernetes API, as it is the central point of interaction with the cluster.
+
+Tha request to the APi server comming either from human user or Kubernetes ServiceAccount (e.g., from a Pod) goes through three stages:
+1. **Authentication**: The API server verifies the identity of the user or application making the request. This can be done using various methods, such as client certificates, bearer tokens, or external authentication providers (e.g., OpenID Connect).
+2. **Authorization**: After authentication, the API server checks if the user or application has the necessary permissions to perform the requested action. This is done using Role-Based Access Control (RBAC) or other authorization mechanisms.
+3. **Admission Control**: If the request is authorized, it goes through a series of admission controllers that can validate and modify the request before it is processed. This can include enforcing security policies, validating resource limits, or mutating the request.
+
+![access-control-overview](./images/access-control-overview.svg)
+
+### Authentication
+
+Kubernetes itself does not provide a built-in authentication mechanism, but it supports various authentication methods that can be used to verify the identity of users and applications interacting with the cluster.
+
+Supported authentication methods:
+- **X509 client certificates** 
+  - Users can authenticate using client certificates signed by a trusted Certificate Authority (CA). The API server verifies the certificate and extracts the user identity from it.
+  - To use this method, you need to create a client certificate and key, and then configure the API server to trust the CA that signed the certificate.
+- **Static token file** 
+  - Users can authenticate using bearer tokens stored in a static file. The API server checks the token against the file to verify the user's identity.
+  - This method is not recommended for production use, as it requires managing tokens manually and does not provide a way to revoke them. 
+  - Tokens last indefinitely and cannot changed without restarting the API server.
+- **Bootstrap tokens** 
+  - A special type of token used for bootstrapping new nodes in the cluster. They are short-lived and can be used to authenticate the node during the initial setup.
+  - Bootstrap tokens are automatically created by Kubernetes and can be used to join new nodes to the cluster.
+  - They are not intended for user authentication and are typically used only during the initial setup of the cluster.
+- **Service account tokens** 
+  - Each Pod in Kubernetes can have a ServiceAccount associated with it, which provides a token that can be used to authenticate the Pod to the API server.
+  - The token is automatically mounted into the Pod and can be used by applications running inside the Pod to access the API server.
+  - This method is commonly used for applications running in Pods to access the Kubernetes API.
+- **OpenID Connect Tokens** 
+  - Kubernetes can integrate with external identity providers that support OpenID Connect (OIDC). This allows users to authenticate using their existing credentials from the identity provider.
+  - The API server verifies the OIDC token and extracts the user identity from it.
+  - This method is commonly used in production clusters to provide a single sign-on experience for users. 
+- **Webhook Token Authentication** 
+  - Kubernetes can use an external webhook to authenticate users. The API server sends the authentication request to the webhook, which verifies the user's identity and returns the user information.
+  - This method allows for custom authentication logic and integration with external systems.
+  - It is not commonly used in production clusters, as it requires additional setup and maintenance.
+- **Authenticating Proxy** 
+  - Kubernetes can use an external proxy to authenticate users. The proxy handles the authentication and forwards the request to the API server with the authenticated user information.
+  - This method allows for custom authentication logic and integration with external systems.
+  - It is not commonly used in production clusters, as it requires additional setup and maintenance.
+
+There is another special case for authentication, the **Anonymous requests**. When enabled, requests that are not rejected by other configured authentication methods are treated as anonymous requests, and given a username of `system:anonymous` and a group of `system:unauthenticated`.
+
+So far we have been using the certificate based authentication method when interacting with our cluster using `kubectl` even though we haven't explicitly configured it. This is because the minikube have created a client certificate for us and configured the kubeconfig file to use it. You can find the kubeconfig file in the `~/.kube/config` directory. It contains the information about the cluster, user, and context, including the client certificate and key in this case.
+```bash
+cat ~/.kube/config
+```
+```text
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/martin_vitousek_t_mobile_cz/.minikube/ca.crt
+    extensions:
+    - extension:
+        last-update: Thu, 14 Aug 2025 13:47:43 UTC
+        provider: minikube.sigs.k8s.io
+        version: v1.36.0
+      name: cluster_info
+    server: https://192.168.49.2:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    extensions:
+    - extension:
+        last-update: Thu, 14 Aug 2025 13:47:43 UTC
+        provider: minikube.sigs.k8s.io
+        version: v1.36.0
+      name: context_info
+    namespace: default
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: /home/martin_vitousek_t_mobile_cz/.minikube/profiles/minikube/client.crt
+    client-key: /home/martin_vitousek_t_mobile_cz/.minikube/profiles/minikube/client.key
+```
+
+#### Adding new user - certificate
+
+As was already stated Kubernetes by itself does not provide a built-in authentication mechanism, but it supports various authentication methods. One of these methods is using client certificates. This method is commonly used for users who need to access the Kubernetes API directly, such as administrators or developers.
+
+Let's demonstrate this proces for our new user `Bob`. To add a new user to the cluster using client certificates, we need to follow these steps:
+
+1. **Generate Private Key and Certificate Signing Request (CSR)**
+
+    ```bash
+    # Generate the key for Bob
+    openssl genrsa -out bob.key 2048
+    
+    # Generate the CSR for Bob
+    openssl req -new -key bob.key -out bob.csr -subj "/CN=bob"
+    ``` 
+   You can check that both files were created with `ls` command. 
+
+2. **Create a CSR Resource in Kubernetes**
+
+    You can either run the following command to create a CSR resource in Kubernetes, or you can create a YAML file and apply it using `kubectl apply -f <file.yaml>`. The command below will create the CSR resource directly from the command line:
+
+    ```bash
+    # Create a CSR resource YAML
+    cat <<EOF | kubectl apply -f -
+    apiVersion: certificates.k8s.io/v1
+    kind: CertificateSigningRequest
+    metadata:
+      name: bob-csr
+    spec:
+      request: $(cat bob.csr | base64 | tr -d '\n')
+      signerName: kubernetes.io/kube-apiserver-client
+      usages:
+      - client auth
+    EOF 
+    ```
+
+3. **Approve the CSR and Retrieve the Certificate**
+    
+    Now, as an administrator (using your default minikube user context), you need to approve the request to have the certificate signed.
+
+    ```bash
+    # Approve the CSR
+    kubectl certificate approve bob-csr
+    
+    # Retrieve the signed certificate and save it
+    kubectl get csr bob-csr -o jsonpath='{.status.certificate}' | base64 --decode > bob.crt
+    ```
+   
+    This will create the bob.crt file, which is the signed certificate you'll use to authenticate.
+
+4. **Configure `kubeconfig`**
+
+    Now you need to create a new context in your kubeconfig file for the new user `Bob`. You can do this by running the following commands:
+
+    ```bash
+    # Add Bob as a new user with the generated key and certificate
+    kubectl config set-credentials bob --client-key=bob.key --client-certificate=bob.crt
+    
+    # Create a new context linking Bob to your Minikube cluster
+    kubectl config set-context bob-context --cluster=minikube --user=bob
+    ```
+   
+    If you check your kubeconfig file now, you should see the new user and context added:
+
+    ```text
+    apiVersion: v1
+    clusters:
+    - cluster:
+        certificate-authority: /home/martin_vitousek_t_mobile_cz/.minikube/ca.crt
+        extensions:
+        - extension:
+            last-update: Thu, 14 Aug 2025 13:47:43 UTC
+            provider: minikube.sigs.k8s.io
+            version: v1.36.0
+          name: cluster_info
+        server: https://192.168.49.2:8443
+      name: minikube
+    contexts:
+    - context:
+        cluster: minikube
+        user: bob
+      name: bob-context
+    - context:
+        cluster: minikube
+        extensions:
+        - extension:
+            last-update: Thu, 14 Aug 2025 13:47:43 UTC
+            provider: minikube.sigs.k8s.io
+            version: v1.36.0
+          name: context_info
+        namespace: default
+        user: minikube
+      name: minikube
+    current-context: minikube
+    kind: Config
+    preferences: {}
+    users:
+    - name: bob
+      user:
+        client-certificate: /home/martin_vitousek_t_mobile_cz/bob.crt
+        client-key: /home/martin_vitousek_t_mobile_cz/bob.key
+    - name: minikube
+      user:
+        client-certificate: /home/martin_vitousek_t_mobile_cz/.minikube/profiles/minikube/client.crt
+        client-key: /home/martin_vitousek_t_mobile_cz/.minikube/profiles/minikube/client.key
+    ```
+    
+    Now, your kubeconfig file contains both the default minikube user and the new bob user. You can switch to Bob's context using:
+
+5. **Verify the User authentication**
+
+    You can verify that Bob can authenticate but has no permissions yet by default. Let's switch to Bob's context and try to list the Pods in the default namespace:
+    
+    ```bash
+    kubectl config use-context bob-context
+    ```
+    ```bash
+    kubectl get po
+    ```
+    
+    As a result we will get an error:  
+    
+    ```text
+    Error from server (Forbidden): pods is forbidden: User "bob" cannot list resource "pods" in API group "" in the namespace "default"
+    ```
+    This error indicates that Bob is authenticated, but does not have the necessary permissions to list Pods in the default namespace.
+    
+    Now let's compare this to another user, `Alice`, who has been set up selfsigned certificates and thus should not be authenticated by the API server. 
+    
+    ```bash
+    openssl genrsa -out alice.key 2048
+    openssl req -new -key alice.key -out alice.csr -subj "/CN=alice"
+    openssl x509 -req -in alice.csr -signkey alice.key -out alice.crt -days 365
+    kubectl config set-credentials alice --client-key=alice.key --client-certificate=alice.crt
+    kubectl config set-context alice-context --cluster=minikube --user=alice
+    kubectl config use-context alice-context
+    kubectl get po
+    ```
+    The output is again an error:
+    ```text
+    error: You must be logged in to the server (Unauthorized)
+    ```
+    
+    But this time it is because Alice's certificate is not recognized by the API server, so she is not authenticated at all. Don't get confused by `Unauthorized` error, it is not the same as `Forbidden` error. The `Unauthorized` error means that the user is not authenticated, while the `Forbidden` error means that the user is authenticated but does not have the necessary permissions to perform the action.
+    
+    Another point of confusion could arise if we would try to impersonate bot `Bob` and `Alice` users using the `--as` flag in the `kubectl` command while using `minikube context.
+    
+    ```bash
+    kubectl config use-context minikube
+    kubectl get po --as bob
+    kubectl get po --as alice
+    ```
+    ```text
+    Error from server (Forbidden): pods is forbidden: User "bob" cannot list resource "pods" in API group "" in the namespace "default"
+    Error from server (Forbidden): pods is forbidden: User "alice" cannot list resource "pods" in API group "" in the namespace "default"
+    ``` 
+    The minikube context authenticates the request, and the API server then impersonates the users (bob and alice) to perform the authorization check. Since neither of these identities has any permissions, the API server correctly returns a `Forbidden` error in both cases. Mind that the output is the same for both users, even though `Alice` has no certificate and thus can not be authenticated at all by normal means.
 
 ## RBAC (Role-Based Access Control) in Kubernetes
 
