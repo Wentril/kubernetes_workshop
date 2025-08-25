@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-unrestricted
+  namespace: restricted-ns # Specify the namespace here
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.29.0

@@ -57,6 +57,8 @@ spec:
 
 Unfortunately in our example it is more complicated than that. It is not enough to just mount the `/var/cache/nginx` directory as an `emptyDir` volume. We also need to ensure that the nginx configuration file and other directories are mounted correctly, and that the security context is set to allow nginx to run without root privileges.
 
+TODO: explain why each volume is needed
+
 ```yaml
 apiVersion: v1
 kind: Pod
