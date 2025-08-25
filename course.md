@@ -2164,7 +2164,285 @@ Let's demonstrate this proces for our new user `Bob`. To add a new user to the c
     ``` 
     The minikube context authenticates the request, and the API server then impersonates the users (bob and alice) to perform the authorization check. Since neither of these identities has any permissions, the API server correctly returns a `Forbidden` error in both cases. Mind that the output is the same for both users, even though `Alice` has no certificate and thus can not be authenticated at all by normal means.
 
+#### Authentication intermezzo
+
+Additional material on authentication in Kubernetes.
+
+See: [Authentication intermezzo](./special_cases/authentication.md)
+
+### Authorization
+
+Documentation: https://kubernetes.io/docs/reference/access-authn-authz/authorization/
+
+Once a user or application is authenticated (except `anonymous requests`), Kubernetes needs to determine whether they have the necessary permissions to perform the requested action. This is where authorization comes into play. You can see it as a second stap in the schema provided above at the beginning of this section.
+
+The authorization process take place within the API server, which checks request attributes against all policies and might also consult other external services. Based on the result it allows or denies the request. Access denied by default policy is in place for all the resources, meaning that unless explicitly allowed, users and applications cannot perform any actions on the cluster resources.
+
+There are several authorization modes available in Kubernetes:
+- **AlwaysAllow**: This mode allows all requests, regardless of the user's permissions. It is not recommended for production use, as it effectively disables authorization.
+- **AlwaysDeny**: This mode denies all requests, regardless of the user's permissions. It is also not recommended for production use, as it effectively disables access to the cluster.
+- **Node**: This mode allows requests from kubelets (nodes) to perform certain actions on the cluster, such as creating or updating Pods. It is used to allow kubelets to manage their own resources.
+- **Webhooks**: This mode allows you to use an external service to determine whether a request should be allowed or denied. It is useful for integrating with external authorization systems or implementing custom authorization logic.
+- **ABAC (Attribute-Based Access Control)**: This mode allows you to define access control policies based on attributes of the user, resource, and action. It is less commonly used than RBAC and requires additional configuration.
+- **RBAC (Role-Based Access Control)**: This is the most commonly used authorization mode in Kubernetes. It allows you to define fine-grained access control policies based on roles and permissions. RBAC is enabled by default in most Kubernetes distributions, including Minikube.
+
+Nowadays, the `RBAC` is the de-facto standard and the recommended way to manage authorization in Kubernetes clusters. Because of that we will focus on it in the next section. The other modes exceed the scope of this course, but you can find more information about them in the Kubernetes [documentation](https://kubernetes.io/docs/reference/access-authn-authz/authorization/#authorization-modules).
+
+TODO maybe have a look at attributes and verbs https://kubernetes.io/docs/reference/access-authn-authz/authorization/#request-attributes-used-in-authorization
+
+#### `kubectl auth can-i` - inspecting authorization rules
+
+The `kubectl auth can-i` is a very useful command that allows you to check whether a user or application has the necessary permissions to perform a specific action on a resource. It can be used to test RBAC policies and verify that the authorization rules are working as expected.
+
+So far we haven't created any new permissions but still we can compare the main `minikube` user with the newly created `bob` user. Let's check if `minikube` can list Pods in the `default` namespace (make sure that we are running the command under `minikube` context):
+
+```bash
+kubectl auth can-i list pods --namespace default
+```
+```text
+yes
+```
+
+Now let's check the same for `bob` user:
+
+```bash
+kubectl auth can-i list pods --namespace default --as bob
+```
+```text
+no
+```
+
+This command returns `no`, indicating that Bob does not have permission to list Pods in the default namespace. This is expected, as we haven't granted any permissions to Bob yet.
+
+Note that the command `kubectl auth` is for inspection of authorization rules and does not tell you anything about the authentication.
+
 ## RBAC (Role-Based Access Control) in Kubernetes
+
+Role-Based Access Control is a method of regulating access to resources based on the roles of individual users within an organization. In Kubernetes, it means defining what a user or application can do on the cluster. It’s the most common and powerful way to manage permissions.
+
+RBAC allows you to define who can do what with which resources. It's built on four key components:
+- `Role`: Defines a set of permissions within a specific namespace.
+- `ClusterRole`: Defines a set of permissions that are cluster-wide.
+- `RoleBinding`: Grants a Role to a user or group within a specific namespace.
+- `ClusterRoleBinding`: Grants a ClusterRole to a user or group cluster-wide
+
+Let's demonstrate how to create and manage RBAC policies in Kubernetes. We will work in namespace `dev` for this example, create it if it does not exist:
+
+```bash
+kubectl create namespace dev
+```
+
+### Creating a Role and RoleBinding
+
+A Role defines a set of permissions within a specific namespace. It can be used to grant access to resources such as Pods, Services, ConfigMaps, etc. A RoleBinding is used to bind a Role to a user or group within that namespace.
+
+Let's make an example where we allow our user `Bob` to read Pods in the `dev` namespace. For that we need to create both a `Role` and a `RoleBinding`.
+
+Simple example of a Role: [role.yaml](examples/rbac/role.yaml)
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: dev
+  name: pod-reader
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+```
+
+Apply the role:
+```bash
+kubectl apply -f examples/rbac/role.yaml
+```
+
+And inspect if it was created successfully:
+
+```bash
+kubectl get role pod-reader
+```
+```text
+No resources found in default namespace.
+```
+```bash
+kubectl get role pod-reader -n dev
+```
+```text
+NAME         CREATED AT
+pod-reader   2025-08-21T12:12:21Z
+```
+
+As you can see, the `Role` resource is really bound to the namespace where it was created, so we cannot see it in the default namespace, but only in the `dev` namespace.
+
+But to authorize our user `Bob` to read Pods we are still missing proper `RoleBinding` to connect the `Bob` with the role `pod-reader`. A RoleBinding binds a Role to a user or group within a specific namespace. It allows the user or group to perform the actions defined in the Role.
+
+Simple example of a RoleBinding: [role_binding.yaml](examples/rbac/role_binding.yaml)
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pods-for-bob
+  namespace: dev
+subjects:
+- kind: User
+  name: bob
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+```
+
+Apply the role binding:
+```bash
+kubectl apply -f examples/rbac/role_binding.yaml
+```
+```bash
+kubectl get rolebinding read-pods-for-bob -n dev
+```
+```text
+NAME                ROLE              AGE
+read-pods-for-bob   Role/pod-reader   23s
+```
+
+The resource is again bound to the namespace where it was created. It also means that both the `Role` and `RoleBinding` needs to be in the same namespace to work together and they won't be effective outside of that namespace.
+
+Let's try the `kubectl auth can-i` command again, this time for `Bob` user in the `dev` namespace:
+
+```bash
+kubectl auth can-i list pods --namespace dev --as bob
+```
+```text
+yes
+```
+
+But as you could expect, `Bob` is still not able to list Pods in the `default` namespace, as he does not have any permissions there.
+
+```bash
+kubectl auth can-i list pods --namespace default --as bob
+```
+```text
+no
+```
+
+Also as we have setup the role to allow only read operations on Pods, `Bob` is not able to create or delete Pods in the `dev` namespace:
+
+```bash
+kubectl auth can-i create pods --namespace dev --as bob
+```
+```text
+no
+```
+
+And if we actually try to create a Pod in the `dev` namespace as `Bob`, we will get an error:
+
+```bash
+kubectl apply -f examples/nginx_pod.yaml --namespace dev --as bob
+```
+```text
+Error from server (Forbidden): error when creating "examples/nginx_pod.yaml": pods is forbidden: User "bob" cannot create resource "pods" in API group "" in the namespace "dev"
+```
+
+The same situation would happen if we tried to delete a Pod in the `dev`.
+
+### Creating a ClusterRole and ClusterRoleBinding
+
+A ClusterRole is similar to a Role, but it is not bound to a specific namespace. It can be used to grant access to resources across the entire cluster. A ClusterRoleBinding is used to bind a ClusterRole to a user or group cluster-wide.
+
+Let's create a ClusterRole that allows `Bob` to read Pods in all namespaces. This is useful if you want to grant the same permissions to a user across the entire cluster.
+
+Simple example of a `ClusterRole` and `ClustereRoleBinding`: [cluster_role.yaml](examples/rbac/cluster_role.yaml) and [cluster_role_binding.yaml](examples/rbac/cluster_role_binding.yaml)
+
+Apply the ClusterRole:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-reader
+  # Namespace was omitted, as ClusterRole is not bound to a specific namespace
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+```
+```bash
+kubectl apply -f cluster-reader-role.yaml
+```
+
+Apply the ClusterRoleBinding:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-cluster-for-bob
+  # Namespace was omitted, as ClusterRoleBinding is not bound to a specific namespace
+subjects:
+- kind: User
+  name: bob
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-reader
+  apiGroup: rbac.authorization.k8s.io
+```
+```bash
+kubectl apply -f cluster-reader-role.yaml
+```
+
+Test the permissions for `Bob` user:
+
+```bash
+kubectl auth can-i list pods -n dev --as bob
+kubectl auth can-i list pods -n default --as bob
+kubectl auth can-i list pods --all-namespaces --as bob
+```
+```text
+yes
+yes
+yes
+```
+
+We can even try to run the `get` command as `Bob` user to list Pods in all namespaces or you can swith to `bob` context and run the command without `--as` flag:
+```bash
+kubectl get pod --all-namespaces --as bob
+```
+```text
+NAMESPACE     NAME                               READY   STATUS    RESTARTS     AGE
+kube-system   coredns-674b8bbfcf-jq7nz           1/1     Running   2 (7d ago)   7d
+kube-system   etcd-minikube                      1/1     Running   0            7d
+kube-system   kindnet-768tk                      1/1     Running   0            7d
+kube-system   kindnet-8rfd8                      1/1     Running   0            7d
+kube-system   kindnet-vjcld                      1/1     Running   0            7d
+kube-system   kube-apiserver-minikube            1/1     Running   0            7d
+kube-system   kube-controller-manager-minikube   1/1     Running   0            7d
+kube-system   kube-proxy-8fbbl                   1/1     Running   0            7d
+kube-system   kube-proxy-csr9v                   1/1     Running   0            7d
+kube-system   kube-proxy-k7qtf                   1/1     Running   0            7d
+kube-system   kube-scheduler-minikube            1/1     Running   0            7d
+kube-system   storage-provisioner                1/1     Running   1 (7d ago)   7d
+```
+
+But other permissions like creating or deleting Pods are still not allowed:
+
+```bash
+kubectl auth can-i create pods --as bob
+```
+```text
+no
+```
+
+Note that ClusterRoles can be used in RoleBindings as well, so you can bind a ClusterRole to a user or group within a specific namespace if needed.
+
+### RBAC advanced topics
+
+It is advised to consult the [official documentation](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) for more advanced topics related to RBAC.
+
+TODO See: [RBAC advanced topics](./special_cases/rbac.md)
 
 ## Security contexts and pod isolation, pod admission controls
 
