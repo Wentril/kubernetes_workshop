@@ -219,7 +219,7 @@ A Deployment manages a set of Pods to run an application workload, usually one t
 
 A Deployment is a higher-level abstraction that manages Pods and ReplicaSets. Hierarchy: `Deployment > ReplicaSet > Pods`
 
-Describe dessired state (e.g., number of replicas, container images, etc.) and the Deployment controller will ensure that the current state matches the desired state.
+Describe desired state (e.g., number of replicas, container images, etc.) and the Deployment controller will ensure that the current state matches the desired state.
 
 ```yaml
 apiVersion: apps/v1
@@ -658,7 +658,7 @@ pod/nginx-cb6645bd8-zsnl2   1/1     Running   0          36s
 
 ## Inspecting a rollout
 
-Lets make a change in the Deployment to downgrade the image version of nginx to `1.28.0`, set value in yaml file: `image: nginx:1.28.0`
+Let's make a change in the Deployment to downgrade the image version of nginx to `1.28.0`, set value in yaml file: `image: nginx:1.28.0`
 
 After that apply the change:
 
@@ -979,7 +979,7 @@ Kubernetes volumes enable containers within a pod to access and share data throu
 - supplying configuration details to applications based on pod metadata (e.g., informing a sidecar of its namespace)
 - granting read-only access to data from another container image
 
-From the above mentioned use cases, there are two important requirements that volumes address:
+From the above-mentioned use cases, there are two important requirements that volumes address:
 1. **Persistence**: Data should remain available even after the pod is deleted or restarted.
 2. **Sharing**: Data should be accessible by multiple containers within the same pod or across different pods.
 
@@ -1082,7 +1082,7 @@ Finalizers can be added on a PersistentVolume to ensure that PersistentVolumes h
 
 - `external-provisioner.volume.kubernetes.io/finalizer` to dynamically and statically provisioned CSI (Container Storage Interface) Volumes.
 
-From Kubernetes 1.33, 23rd April, 2025, this is done automatically. 
+From Kubernetes 1.33, 23rd April 2025, this is done automatically. 
 
 More on that: https://kubernetes.io/blog/2024/08/16/kubernetes-1-31-prevent-persistentvolume-leaks-when-deleting-out-of-order/]
 
@@ -1158,7 +1158,7 @@ In pod specification, you can reference the ConfigMap in several ways:
         - key: config.txt
           path: config.txt  # Mounts the 'config.txt' key as a file named 'config.txt'
   ```
-  - if items field is ommited, all keys from the ConfigMap will be mounted as files in the specified mountPath, with each key becoming a file named after the key.
+  - if items field is omitted, all keys from the ConfigMap will be mounted as files in the specified mountPath, with each key becoming a file named after the key.
   ```yaml
   #spec.containers[].volumeMounts:
   - name: foo
@@ -1169,7 +1169,7 @@ In pod specification, you can reference the ConfigMap in several ways:
   - name: foo
     configMap:
       name: example-config
-      # ommited items field, so all keys will be mounted as files
+      # omitted items field, so all keys will be mounted as files
   ```
 
 #### Immutable ConfigMaps
@@ -1319,7 +1319,7 @@ To use a Secret in a Pod you can:
         secretName: my-secret
   ```
 
-Investigate logs after creatinh both pods `kubectl logs my-secret-env-pod` and `kubectl logs my-secret-volume-pod`.
+Investigate logs after creating both pods `kubectl logs my-secret-env-pod` and `kubectl logs my-secret-volume-pod`.
 
 #### `imagePullSecrets ` - accessing private container registries
 
@@ -1331,7 +1331,7 @@ TODO maybe example
 
 ## Kubernetes namespace and resource isolation
 
-Simple example of an Namespace resource: [namespace.yaml](./examples/namespace.yaml)
+Simple example of a Namespace resource: [namespace.yaml](./examples/namespace.yaml)
 
 Namespaces are a core feature of Kubernetes that provide a way to divide a cluster's resources into virtual sub-clusters. Think of them as a way to logically isolate resources within a single physical cluster. They are a fundamental tool for organizing and managing resources for different teams, projects, or applications.
 
@@ -1346,7 +1346,7 @@ metadata:
   name: my-namespace
 ```
 
-or directly throught `kubectl` command:
+or directly through `kubectl` command:
 ```bash
 kubectl create namespace my-namespace
 ```
@@ -1463,7 +1463,7 @@ kubectl config set-context --current --namespace=default
 
 #### Contradictory namespace specification
 
-In general you can set the namespace of the resource which you are creating either in the YAML manifest or by using the `-n` flag with `kubectl` commands. But it won't work if you specify it in both places and it will be different.
+In general, you can set the namespace of the resource which you are creating either in the YAML manifest or by using the `-n` flag with `kubectl` commands. But it won't work if you specify it in both places, and it will be different.
 ```bash
 kubectl apply -f examples/<manifest>.yaml -n default  # where `metadata.namespace` is set to `my-namespace`
 ```
@@ -1649,7 +1649,7 @@ image:
   tag: ""
 ```
 
-Setup the `tag` field to a specific version of the nginx image, for example `1.29.0` as in previous manifest examples:
+Set up the `tag` field to a specific version of the nginx image, for example `1.29.0` as in previous manifest examples:
 ```yaml
 image:
   repository: nginx
@@ -1752,7 +1752,7 @@ Additionally, you can set the namespace of different resources through `values.y
 
 ### Helm and value overrides
 
-As we have already seen, Helm charts can be customized using the `values.yaml` file. On top of that, additional value files can be used to override the default value file. You can specify multiple value files using the `-f` or `--values` flag when installing or upgrading a Helm chart or you can override specific values using the `--set` flag.
+As we have already seen, Helm charts can be customized using the `values.yaml` file. On top of that, additional value files can be used to override the default value file. You can specify multiple value files using the `-f` or `--values` flag when installing or upgrading a Helm chart, or you can override specific values using the `--set` flag.
 
 There is an order of precedence for value overriding in Helm:
 1. Chart's `values.yaml` file. It is always used automatically when installing or upgrading a chart.
@@ -1923,16 +1923,17 @@ The most important aspects of Kubernetes security include:
 
 ## Authentication and authorization with Kubernetes
 
-One of the most important acpects of Kubernetes security is the ability ti contol access to the Kubernetes API, as it is the central point of interaction with the cluster.
+One of the most important aspects of Kubernetes security is the ability to control access to the Kubernetes API, as it is the central point of interaction with the cluster.
 
-Tha request to the APi server comming either from human user or Kubernetes ServiceAccount (e.g., from a Pod) goes through three stages:
-1. **Authentication**: The API server verifies the identity of the user or application making the request. This can be done using various methods, such as client certificates, bearer tokens, or external authentication providers (e.g., OpenID Connect).
-2. **Authorization**: After authentication, the API server checks if the user or application has the necessary permissions to perform the requested action. This is done using Role-Based Access Control (RBAC) or other authorization mechanisms.
-3. **Admission Control**: If the request is authorized, it goes through a series of admission controllers that can validate and modify the request before it is processed. This can include enforcing security policies, validating resource limits, or mutating the request.
+Tha request to the APi server coming either from human user or Kubernetes ServiceAccount (e.g., from a Pod) goes through three stages:
+1. **[Authentication](#authentication)**: The API server verifies the identity of the user or application making the request. This can be done using various methods, such as client certificates, bearer tokens, or external authentication providers (e.g., OpenID Connect).
+2. **[Authorization](#Authorization)**: After authentication, the API server checks if the user or application has the necessary permissions to perform the requested action. This is done using Role-Based Access Control (RBAC) or other authorization mechanisms.
+   - [RBAC](#RBAC-Role-Based-Access-Control-in-Kubernetes) is the most commonly used authorization mechanism in Kubernetes.
+3. **[Admission Control](#security-contexts-and-pod-isolation-pod-admission-controls)**: If the request is authorized, it goes through a series of admission controllers that can validate and modify the request before it is processed. This can include enforcing security policies, validating resource limits, or mutating the request.
 
 ![access-control-overview](./images/access-control-overview.svg)
 
-### Authentication
+## Authentication
 
 Kubernetes itself does not provide a built-in authentication mechanism, but it supports various authentication methods that can be used to verify the identity of users and applications interacting with the cluster.
 
@@ -1943,7 +1944,7 @@ Supported authentication methods:
 - **Static token file** 
   - Users can authenticate using bearer tokens stored in a static file. The API server checks the token against the file to verify the user's identity.
   - This method is not recommended for production use, as it requires managing tokens manually and does not provide a way to revoke them. 
-  - Tokens last indefinitely and cannot changed without restarting the API server.
+  - Tokens last indefinitely and cannot be changed without restarting the API server.
 - **Bootstrap tokens** 
   - A special type of token used for bootstrapping new nodes in the cluster. They are short-lived and can be used to authenticate the node during the initial setup.
   - Bootstrap tokens are automatically created by Kubernetes and can be used to join new nodes to the cluster.
@@ -2006,7 +2007,7 @@ users:
     client-key: /home/martin_vitousek_t_mobile_cz/.minikube/profiles/minikube/client.key
 ```
 
-#### Adding new user - certificate
+### Adding new user - certificate
 
 As was already stated Kubernetes by itself does not provide a built-in authentication mechanism, but it supports various authentication methods. One of these methods is using client certificates. This method is commonly used for users who need to access the Kubernetes API directly, such as administrators or developers.
 
@@ -2164,17 +2165,17 @@ Let's demonstrate this proces for our new user `Bob`. To add a new user to the c
     ``` 
     The minikube context authenticates the request, and the API server then impersonates the users (bob and alice) to perform the authorization check. Since neither of these identities has any permissions, the API server correctly returns a `Forbidden` error in both cases. Mind that the output is the same for both users, even though `Alice` has no certificate and thus can not be authenticated at all by normal means.
 
-#### Authentication intermezzo
+### Authentication intermezzo
 
 Additional material on authentication in Kubernetes.
 
 See: [Authentication intermezzo](./special_cases/authentication.md)
 
-### Authorization
+## Authorization
 
 Documentation: https://kubernetes.io/docs/reference/access-authn-authz/authorization/
 
-Once a user or application is authenticated (except `anonymous requests`), Kubernetes needs to determine whether they have the necessary permissions to perform the requested action. This is where authorization comes into play. You can see it as a second stap in the schema provided above at the beginning of this section.
+Once a user or application is authenticated (except `anonymous requests`), Kubernetes needs to determine whether they have the necessary permissions to perform the requested action. This is where authorization comes into play. You can see it as a second stap in the [schema](#authentication-and-authorization-with-kubernetes) provided above at the beginning of this section.
 
 The authorization process take place within the API server, which checks request attributes against all policies and might also consult other external services. Based on the result it allows or denies the request. Access denied by default policy is in place for all the resources, meaning that unless explicitly allowed, users and applications cannot perform any actions on the cluster resources.
 
@@ -2307,7 +2308,7 @@ NAME                ROLE              AGE
 read-pods-for-bob   Role/pod-reader   23s
 ```
 
-The resource is again bound to the namespace where it was created. It also means that both the `Role` and `RoleBinding` needs to be in the same namespace to work together and they won't be effective outside of that namespace.
+The resource is again bound to the namespace where it was created. It also means that both the `Role` and `RoleBinding` needs to be in the same namespace to work together, and they won't be effective outside of that namespace.
 
 Let's try the `kubectl auth can-i` command again, this time for `Bob` user in the `dev` namespace:
 
@@ -2327,7 +2328,7 @@ kubectl auth can-i list pods --namespace default --as bob
 no
 ```
 
-Also as we have setup the role to allow only read operations on Pods, `Bob` is not able to create or delete Pods in the `dev` namespace:
+Also as we have set up the role to allow only read operations on Pods, `Bob` is not able to create or delete Pods in the `dev` namespace:
 
 ```bash
 kubectl auth can-i create pods --namespace dev --as bob
@@ -2407,7 +2408,7 @@ yes
 yes
 ```
 
-We can even try to run the `get` command as `Bob` user to list Pods in all namespaces or you can swith to `bob` context and run the command without `--as` flag:
+We can even try to run the `get` command as `Bob` user to list Pods in all namespaces, or you can switch to `bob` context and run the command without `--as` flag:
 ```bash
 kubectl get pod --all-namespaces --as bob
 ```
