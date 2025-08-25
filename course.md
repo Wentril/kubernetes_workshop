@@ -68,6 +68,32 @@ sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 kubectl version --client
 ```
 
+#### `k` alias for `kubectl`
+
+As the whole workshop will be using `kubectl` command a lot, it is convenient to create an alias for it. You can add the following line to your `~/.bashrc` or `~/.zshrc` file:
+
+```bash
+nano ~/.bashrc
+```
+
+Insert the following line at the end of the file:
+```text
+alias k='kubectl'
+```
+If using nano, save and close the file with `CTRL+X`, then `Y`, then `ENTER`.
+
+Run the following command to apply the changes in your current terminal session:
+```bash
+source ~/.bashrc
+```
+
+Try the new alias:
+```bash
+k version --client
+```
+
+This should make your life easier and your hands less tired :-)
+
 ### Install minikube
 
 Minikube is a tool that makes it easy to run Kubernetes locally. It creates a VM or runs a container on your local machine and deploys a Kubernetes cluster inside it. This is a great way to learn and experiment with Kubernetes without needing a full setup.
@@ -813,7 +839,7 @@ TODO See: [nodeport_service.md](./special_cases/nodeport_service)
 
 ### ExternalName
 
-See: [externalName_service.md](./special_cases/externalname_service)
+See: [externalName_service.md](./special_cases/externalname_service.md)
 
 ### LoadBalancer
 
