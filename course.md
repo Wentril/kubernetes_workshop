@@ -19,7 +19,7 @@ TODO
 
 - **Control plane**: manages the Kubernetes cluster, making global decisions about the cluster (e.g., scheduling), detecting and responding to cluster events.
 - **Worker nodes**: run the applications and workloads, managed by the control plane.
-- A single node acts as both control-plane and worker
+- In a single node cluster the node acts as both control-plane and worker
 
 ![img.png](images/cluster_architecture.png)
 
@@ -39,9 +39,9 @@ TODO
 
 - kubelet
   - ensuring that containers are running in a pod according to PodSpec
-      - kube-proxy
-      - maintains network rules on nodes, allowing communication to pods
-      - implements part of the Kubernetes Service concept
+- kube-proxy
+  - maintains network rules on nodes, allowing communication to pods
+  - implements part of the Kubernetes Service concept
 - Container runtime (e.g., Docker, containerd)
   - responsible for managing the execution and lifecycle of containers
 
@@ -189,7 +189,7 @@ Pods are ephemeral and disposable: they get new IPs if they restart or are re-sc
 
 Shared resources: Containers in a Pod share network namespace and volumes.
 
-Usually, Pods are not created directly, but via. Deployments.
+Usually, Pods are not created directly, but via Deployments.
 
 Pod is meant to run a single instance of an application. In case of scaling, multiple Pods are created. (Replication)
 
