@@ -45,6 +45,19 @@ TODO
 - Container runtime (e.g., Docker, containerd)
   - responsible for managing the execution and lifecycle of containers
 
+### How it works together
+
+- Users interact with the cluster via `kubectl` or other clients, sending requests to the API server.
+- The API server processes these requests and updates the desired cluster state in `etcd`.
+- `etcd` is the cluster database and source of truth of the cluster state.
+  - all the changes to `etcd` goes through the API server
+- `kube-scheduler` watches the API server (which reflects the cluster state stored in etcd) for new Pods that need to be scheduled and assigns them to nodes.
+  - it does not place them directly to the node, but updates the pod specification in `etcd` (via the API server) with the name of the node
+- `kube-controller-manager` runs various controllers that monitor the state of the cluster (in `etcd` via the API server) and make adjustments to ensure the desired state is maintained.
+  - `reconciliation loop` - controllers continuously compare the desired state with the current state and make changes as needed
+- `kubelet` on each node watches the API server for pods assigned to its node and ensures that the containers are running as specified in the pod specification.
+  - it interacts with the container runtime to start, stop, and manage containers
+  - it reports the status of the pods back to the API server
 
 ## Installation of Kubernetes (e.g. with Minikube or kubeadm). Ideally, a lab environment provided by the training provider.
 
