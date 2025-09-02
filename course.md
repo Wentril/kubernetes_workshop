@@ -180,7 +180,7 @@ We will use Minikube for the rest of the workshop, but you can also use other me
 If you continue with minikube, launch a new cluster with the following command:
 
 ```bash
-minikube start --nodes=3
+minikube start --nodes=3 --cni=cilium
 ```
 
 Additionally, run this command, we will explain it later:
@@ -189,6 +189,8 @@ kubectl taint nodes minikube node-role.kubernetes.io/control-plane:NoSchedule
 ```
 
 This starts minikube with two nodes so we can later demonstrate even some advanced features like multi-node deployments, etc.
+
+We also set up `cilium` as a requested CNI plugin, which will be explained later in the workshop.
 
 ## Get started with Kubernetes: pods, deployments, services
 
