@@ -2667,6 +2667,572 @@ Let's do a demo to enforce the most secure profile, Restricted, and see how it w
 
 ## Network policies and network security in Kubernetes
 
-remember namespaces
+Network policies are a way to control the communication between Pods and Services in a Kubernetes cluster. They allow you to define rules that specify which Pods can communicate with each other, and which Pods can communicate with external resources.
+
+By default, Kubernetes networking is flat, meaning all Pods can communicate with each other and with the outside world. This is great for ease of use but poses a significant security risk.
+
+On the other hand once a network policy is applied to a Pod, it will block all traffic to and from that Pod unless explicitly allowed by the policy. This means that if you create a network policy for a Pod, you need to define all the allowed traffic for that Pod, otherwise it will be isolated.
+
+You can think of a network policy as a firewall rule for your Pods. They are a fundamental tool for implementing a Zero Trust security model within your cluster.
+
+### Key Concepts
+
+- `podSelector` - used to select the group of pods to which the network policy will be applied
+  - Policies are often based on labels, such as app: my-app or role: database
+  - An empty pod selector ({}) selects all pods within the namespace
+- `policyTypes` - Policies can control two main types of traffic:
+  - `Ingress`: This refers to incoming traffic to the selected pods
+    - defines which sources are allowed to connect to the pods
+  - `Egress`: This refers to outgoing traffic from the selected pods
+    - defines which destinations the pods are allowed to connect to
+`ingress/egress` rules: The core of a network policy is its rules. These rules are defined within the `ingress` and `egress` sections of the policy manifest. They can be based on:
+    - `podSelector`: Allowing traffic from/to pods with specific labels.
+    - `namespaceSelector`: Allowing traffic from/to all pods in a specific namespace.
+    - `ipBlock`: Allowing traffic from/to specific IP address ranges (CIDR blocks).
+    `ports`: Specifying the port number or range for the allowed traffic.
+
+Each rule in `ingress`/`egress` allows the trafic which matches both `from`/`to` and `ports` conditions. Different rules in the same section are combined using a logical OR.
+
+Let's look at an example to illustrate these concepts:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: default
+spec:
+  podSelector:  # select pods to which this policy applies
+    matchLabels:
+      role: db
+  policyTypes:  # specify whether the policy applies to ingress, egress, or both      
+  - Ingress
+  - Egress
+  ingress:  # rules for incoming traffic
+  - from:  # sources allowed to connect to the selected pods
+    - ipBlock:  # allow traffic from specific IP ranges
+        cidr: 172.17.0.0/16
+        except:
+        - 172.17.1.0/24
+    - namespaceSelector:  # allow traffic from all pods in a specific namespace
+        matchLabels:
+          project: myproject
+    - podSelector:  # allow traffic from pods with specific labels
+        matchLabels:
+          role: frontend
+    ports:  # specify allowed ports
+    - protocol: TCP
+      port: 6379
+  egress:  # rules for outgoing traffic
+  - to: # destinations the selected pods are allowed to connect to
+    - ipBlock:  # allow traffic to specific IP ranges
+        cidr: 10.0.0.0/24
+    ports:  # specify allowed ports
+    - protocol: TCP
+      port: 5978
+```
+
+The example above will allow traffic for pods with the label `role: db` in the `default` namespace as follows:
+- incoming traffic on TCP port `6379` from:
+  - Any pod in the namespace with the label `project: myproject`
+  - Any pod with the label `role: frontend`
+  - Any IP address in the ranges `172.17.0.0`–`172.17.0.255` and `172.17.2.0`–`172.17.255.255`
+- outgoing traffic on TCP port `5978` to:
+  - Any IP address in the range `10.0.0.0`-`10.0.0.255`
+
+### Container Network Interface (CNI)
+
+A Container Network Interface (CNI) is a specification that defines a common interface for container runtimes to interact with network providers. In simple terms, CNI is the component that gives your pods network connectivity.
+
+Note that Kubernetes itself does not provide any built-in networking solution. Instead, it relies on CNI plugins to handle the networking aspects of the cluster.
+
+**The Problem CNI Solves** - Kubernetes pods are ephemeral and can be scheduled on any node in the cluster. For them to communicate, they need a robust and reliable network. A CNI plugin is responsible for:
+- Assigning IP addresses to pods.
+- Connecting those pods to the cluster's network.
+- Ensuring communication between pods on the same node.
+- Ensuring communication between pods on different nodes.
+
+Without a CNI plugin, your pods would be isolated and unable to communicate, rendering your cluster non-functional.
+
+The network policies (as shown above) depends on the CNI plugin. A policy is a simple rule  rules in the Kubernetes API, but its enforcement mechanism is handled by CNI plugin. 
+
+Because of that there is (or need to be)always some CNI plugin installed in the cluster. Some popular CNI plugins include:
+- **[Cilium](https://cilium.io/)**
+- **[Calico](https://www.tigera.io/project-calico/)**
+
+Other examples of CNI plugins as well as CNI specification can be found here: [Container Network Interface (CNI) - GitHub](https://github.com/containernetworking/cni)
+
+#### Installing a CNI plugin in Minikube
+
+There is a critical problem with default Minikube installation as it uses `Kindnet` CNI plugin which does not support network policies by design.
+
+### Default policies
+
+By default, if no policies exist in a namespace, then all ingress and egress traffic is allowed to and from pods in that namespace.
+
+Based on Zero Trust principles, it is a good practice to start with a default deny all policy and then explicitly allow only the necessary traffic. This approach minimizes the attack surface and ensures that only authorized communication is permitted. See the following examples of default policies:
+
+#### Default deny all ingress/egress traffic
+
+Example of a default deny all ingress traffic policy. This policy ensures that no incoming traffic can reach the pods unless explicitly allowed by other network policies.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+```
+
+#### Default deny all egress traffic
+
+Example of a default deny all egress traffic policy. This policy ensures that no outgoing traffic can leave the pods unless explicitly allowed by other network policies.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+```
+
+#### Default deny all ingress and egress traffic
+
+Default deny all ingress and egress traffic is a combination of the two previous policies. It ensures that no traffic can enter or leave the pods unless explicitly allowed by other network policies. It is a good practice to implement this policy as a baseline for securing your cluster.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+```
+
+#### Allow all ingress/egress traffic
+
+Just for the sake of completeness, here is how to allow all ingress/egress traffic. This is not a recommended practice, but it can be useful for testing or troubleshooting purposes.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-ingress
+spec:
+  podSelector: {}
+  ingress:  # change for egress to allow all egress traffic
+  - {}
+  policyTypes:
+  - Ingress  # change for egress to allow all egress traffic
+```
+
+### Network policy demo
+
+Let's do a demo to illustrate how network policies work in practice. We will create two namespaces, each with a pod, and then apply network policies (default deny and explicit allow) to control the communication between them.
+
+1. **Initial State**
+
+    Setup two pods (nginx server and busybox client) in two different namespaces (`ns-a` and `ns-b`). For the server pod we will also need a service.
+    
+    Apply the manifest [pods_and_namespaces.yaml](./examples/network_policy/pods_and_namespaces.yaml) to create two namespaces and two pods:
+    
+    ```yaml
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: ns-a
+    ---
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: ns-b
+    ---
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: client-pod
+      namespace: ns-a
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: busybox
+        command: ["sleep", "3600"]
+    ---
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: server-pod
+      namespace: ns-b
+      labels:
+        app: server
+    spec:
+      containers:
+      - name: server
+        image: nginx
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: server-svc
+      namespace: ns-b
+    spec:
+      selector:
+        app: server
+      ports:
+        - protocol: TCP
+          port: 80
+          targetPort: 80
+    ```
+    
+    ```bash
+    kubectl apply -f examples/network_policy/pods_and_namespaces.yaml
+    ```
+    ```bash
+    kubectl get pods -n ns-a
+    kubectl get pods -n ns-b
+    kubectl get svc -n ns-b
+    ```
+    
+    After a while both pods should be in `Running` state.
+
+2. **Default Behavior**: Communication between the pods is allowed by default.
+
+    Let's test the communication between the two pods. Note that so far we have not applied any network policies to either namespace.
+    
+    ```bash
+    kubectl exec -n ns-a client-pod -- wget -qO- server-svc.ns-b.svc.cluster.local
+    ```
+    
+    If everything is working correctly, you should see the default Nginx welcome page content:
+    
+    ```html
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Welcome to nginx!</title>
+    <style>
+    html { color-scheme: light dark; }
+    body { width: 35em; margin: 0 auto;
+    font-family: Tahoma, Verdana, Arial, sans-serif; }
+    </style>
+    </head>
+    <body>
+    <h1>Welcome to nginx!</h1>
+    <p>If you see this page, the nginx web server is successfully installed and
+    working. Further configuration is required.</p>
+    
+    <p>For online documentation and support please refer to
+    <a href="http://nginx.org/">nginx.org</a>.<br/>
+    Commercial support is available at
+    <a href="http://nginx.com/">nginx.com</a>.</p>
+    
+    <p><em>Thank you for using nginx.</em></p>
+    </body>
+    </html>
+    ```
+
+3. **Default Deny Policy**: block all ingress and egress traffic.
+
+    Now let's apply the default deny all policy to both namespaces. This will block all communication between the pods.
+    
+    Apply the manifest [default_deny_all.yaml](./examples/network_policy/default_deny_all.yaml):
+    
+    ```yaml
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: default-deny-all
+      namespace: ns-a
+    spec:
+      podSelector: {}
+      policyTypes:
+      - Ingress
+      - Egress
+    ---
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: default-deny-all
+      namespace: ns-b
+    spec:
+      podSelector: {}
+      policyTypes:
+      - Ingress
+      - Egress
+    ```
+    ```bash
+    kubectl apply -f examples/network_policy/default_deny_all.yaml
+    ```
+    
+    ```bash
+    kubectl get networkpolicy --all-namespaces
+    ```
+    
+    ```text
+    NAMESPACE   NAME               POD-SELECTOR   AGE
+    ns-a        default-deny-all   <none>         26s
+    ns-b        default-deny-all   <none>         26s
+    ```
+
+4. **Result**: Communication between the pods is now blocked.
+
+    Let's test the communication again after applying the default deny all policies:
+    
+    ```bash
+    kubectl exec -n ns-a client-pod -- wget -qO- server-svc.ns-b.svc.cluster.local
+    ```
+    
+    This time it should fail with an error:
+    
+    ```text
+    wget: bad address 'server-svc.ns-b.svc.cluster.local'
+    command terminated with exit code 1
+    ```
+    
+    It is because the default deny all policy is blocking all traffic between the pods.
+
+5. Allowlist Policies: Two new NetworkPolicies are created as an allowlist exception:
+
+    To allow the communication between the pods, we need to create two new network policies: one in `ns-a` to allow egress traffic to `ns-b`, and another in `ns-b` to allow ingress traffic from `ns-a`. 
+    
+    Apply the manifest[allow_policies.yaml](./examples/network_policy/allow_policies.yaml):  
+
+    ```yaml
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: allow-ingress-to-ns-b-from-ns-a-all-pods
+      namespace: ns-b # This policy applies to pods in the 'ns-b' namespace
+    spec:
+      podSelector: {} # Selects all pods in the ns-b namespace
+      policyTypes:
+        - Ingress
+      ingress:
+        - from:
+            # This namespaceSelector allows traffic from any pod within the 'ns-a' namespace.
+            - namespaceSelector:
+                matchLabels:
+                 kubernetes.io/metadata.name: ns-a
+    ---
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: allow-egress-from-ns-a-to-ns-b-all-pods
+      namespace: ns-a # This policy applies to pods in the 'ns-a' namespace
+    spec:
+      podSelector: {} # Selects all pods in the ns-a namespace
+      policyTypes:
+        - Egress
+      egress:
+        - to:
+            # This namespaceSelector allows outbound traffic to any pod within the 'ns-b' namespace.
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: ns-b
+    ```
+    ```bash
+    kubectl apply -f examples/network_policy/allow_policies.yaml
+    ```
+    Check the network policies again:
+    
+    ```bash
+    kubectl get networkpolicy --all-namespaces
+    ```
+    ```text
+    NAMESPACE   NAME                                       POD-SELECTOR   AGE
+    ns-a        allow-egress-from-ns-a-to-ns-b-all-pods    <none>         4s
+    ns-a        default-deny-all                           <none>         3m
+    ns-b        allow-ingress-to-ns-b-from-ns-a-all-pods   <none>         4s
+    ns-b        default-deny-all                           <none>         3m
+    ```
+   
+    Unfortunately this is not enough. The communication is still blocked:
+
+    ```bash
+    kubectl exec -n ns-a client-pod -- wget -qO- server-svc.ns-b.svc.cluster.local
+    ```
+    ```text
+    wget: bad address 'server-svc.ns-b.svc.cluster.local'
+    command terminated with exit code 1
+    ```
+
+6. **Understanding the Issue**: Access to DNS is blocked.
+
+    The issue comes from the fact, that once any policy is applied to a pod, it will switch fom `default allow` policy to `default deny unless specifically allowed`. As a result of that, the pod loses access to essential cluster services like DNS.
+
+    You can try to access the pod directly by its IP address or the IP address of its service, but that is not a good practice as the IP address can change.
+    
+    To fix that we need to also allow egress traffic to the DNS service in the `kube-system` namespace.
+    
+    For that apply the manifest [allow_dns_policy.yaml](./examples/network_policy/allow_dns_policy.yaml):
+    
+    ```yaml
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: allow-dns-egress
+      namespace: ns-a
+    spec:
+      podSelector: {} # This applies to all pods in ns-a
+      policyTypes:
+        - Egress
+      egress:
+        # Allow traffic to the DNS service in the kube-system namespace
+        - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: kube-system
+            podSelector:
+              matchLabels:
+                k8s-app: kube-dns
+          ports:
+          - protocol: UDP
+            port: 53
+    ```
+    
+    ```bash
+    kubectl apply -f examples/network_policy/allow_dns_policy.yaml
+    ```
+    Check the network policies again:
+    
+    ```bash
+    kubectl get networkpolicy --all-namespaces
+    ```
+    ```text
+    NAMESPACE   NAME                                       POD-SELECTOR   AGE
+    ns-a        allow-dns-egress                           <none>         14s
+    ns-a        allow-egress-from-ns-a-to-ns-b-all-pods    <none>         2m
+    ns-a        default-deny-all                           <none>         5m
+    ns-b        allow-ingress-to-ns-b-from-ns-a-all-pods   <none>         2m
+    ns-b        default-deny-all                           <none>         5m
+    ```
+
+7. **Final Result:** Communication between the pods is successfully re-established.
+
+    Let's test the communication again after the new allowlist policies have been applied:
+    
+    ```bash 
+    kubectl exec -n ns-a client-pod -- wget -qO- server-svc.ns-b.svc.cluster.local
+    ```
+    
+    You should see the default Nginx welcome page content again, indicating that the communication between the pods has been successfully re-established.
+
+    ```text
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Welcome to nginx!</title>
+    <style>
+    html { color-scheme: light dark; }
+    body { width: 35em; margin: 0 auto;
+    font-family: Tahoma, Verdana, Arial, sans-serif; }
+    </style>
+    </head>
+    <body>
+    <h1>Welcome to nginx!</h1>
+    <p>If you see this page, the nginx web server is successfully installed and
+    working. Further configuration is required.</p>
+    
+    <p>For online documentation and support please refer to
+    <a href="http://nginx.org/">nginx.org</a>.<br/>
+    Commercial support is available at
+    <a href="http://nginx.com/">nginx.com</a>.</p>
+    
+    <p><em>Thank you for using nginx.</em></p>
+    </body>
+    </html>
+    ```
+
+### Cluster wide network policies
+
+Because network policies are namespace-scoped, they only apply to pods within the same namespace. This means that you need to implement network policies in each namespace where you want to enforce them. Unfortunately kubernetes Network Policies does not support cluster-wide policies out of the box.
+
+This is quite inconvenient and error-prone, as you need to remember to create and maintain the policies in each namespace or utilize some kind of automation (special admission controllers or GitOps tools like ArgoCD/Flux) to do it for you.
+
+Luckily, there are some third-party tools that can help you with that. These tools can provide additional features and capabilities. Commonly used tools include:
+
+- **[Cilium](https://cilium.io/)**  we are already using this in our Minikube setup
+- **[Calico](https://www.tigera.io/project-calico/)**
+
+In case of Cilium, a cluster-wide default deny policy could look like this:
+
+```yaml
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: "default-deny"
+spec:
+  # A description of the policy's purpose. This is a good practice for documentation.
+  description: "Block all the traffic (except DNS) by default"
+
+  # The endpointSelector specifies which pods this policy will apply to.
+  endpointSelector:
+    # A matchExpressions block allows for more complex label matching.
+    matchExpressions:
+    # The key is the label that will be evaluated, in this case, the pod's namespace.
+    - key: io.kubernetes.pod.namespace
+      # The NotIn operator ensures the policy does NOT apply to pods in the specified namespace.
+      operator: NotIn
+      # The policy will apply to all pods, EXCEPT those in the 'kube-system' namespace.
+      values:
+      - kube-system
+  # The egress section defines rules for outgoing traffic from the selected pods.
+  # The absence of a separate ingress section means all incoming traffic is implicitly denied.
+  egress:
+  # This is the single rule that is an exception to the default-deny policy.
+  - toEndpoints:
+    # This selector specifies the destination pods that the selected pods are allowed to connect to.
+    # By matching these labels, we ensure the traffic is only destined for the CoreDNS pods.
+    - matchLabels:
+        io.kubernetes.pod.namespace: kube-system
+        k8s-app: kube-dns
+    toPorts:
+    # This section specifies the ports and protocols that are allowed for the above destination.
+    - ports:
+      # Allows traffic on UDP port 53, the standard port for DNS queries.
+      - port: '53'
+        protocol: UDP
+      rules:
+        dns:
+        # A Cilium-specific rule that explicitly permits all types of DNS queries ('*').
+        - matchPattern: '*'
+```
+
+1. All pods outside the `kube-system` namespace are isolated. No traffic can flow into them.
+2. All pods outside the `kube-system` namespace are blocked from making any outgoing connections except for DNS queries to the CoreDNS service.
+3. Pods in the `kube-system` namespace are not affected by this policy and can communicate freely.
+
+Beware of using simple default deny all policies like this one:
+
+```yaml
+apiVersion: "cilium.io/v2"
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: "default-deny-all"
+spec:
+  # This selector matches all pods (endpoints) in the cluster.
+  endpointSelector: {}
+
+  # The ingress section is empty, which implies a "default deny" rule.
+  # No rules are defined, so no incoming traffic will be allowed.
+  ingress: []
+
+  # The egress section is empty, which also implies "default deny".
+  # No rules are defined, so no outgoing traffic will be allowed.
+  egress: []
+```
+
+This policy will isolate all pods in the cluster, including system pods in the `kube-system` namespace. This can lead to significant disruptions in cluster operations, as essential services like DNS, networking or API server communication may be blocked.
 
 ## Hands-on labs: Configuration of RBAC/Security Context and network security policies

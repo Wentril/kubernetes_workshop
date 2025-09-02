@@ -36,5 +36,4 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: namespace1
-
 ```

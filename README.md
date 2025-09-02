@@ -1,6 +1,6 @@
 # Kubernetes workshop
 
-using Kubernetes v1.31.1
+using Kubernetes v1.33.4
 
 ## References:
 - https://kubernetes.io/docs/
