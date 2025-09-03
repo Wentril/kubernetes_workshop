@@ -7,7 +7,7 @@ TODO
 Container vs Image:
 - **Image**: A ready to run SW package, which includes the application and its dependencies, but is not running.
 - **Container**: A running instance of an image, which includes the application and its dependencies.
-  - should be immutable and stateless (as much as possible)
+  - it should be immutable and stateless (as much as possible)
 
 ## Why Kubernetes? The Need for Orchestration
 
@@ -19,7 +19,7 @@ TODO
 
 - **Control plane**: manages the Kubernetes cluster, making global decisions about the cluster (e.g., scheduling), detecting and responding to cluster events.
 - **Worker nodes**: run the applications and workloads, managed by the control plane.
-- In a single node cluster the node acts as both control-plane and worker
+- In a single node cluster, the node acts as both control-plane and worker
 
 ![img.png](images/cluster_architecture.png)
 
@@ -33,7 +33,7 @@ TODO
 - kube-scheduler
   - watches for newly created pods and assigns them to nodes
 - kube-controller-manager
-  - runs controller processes that handle routine tasks in the cluster
+  - run controller processes that handle routine tasks in the cluster
 
 ### Node components:
 
@@ -126,7 +126,7 @@ curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikub
 sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
 ```
 
-Once installed start the minikube with:
+Once installed, start the minikube with:
 
 ```bash 
 minikube start
@@ -173,7 +173,7 @@ To clean everything up, you can stop and delete the Minikube cluster with:
 minikube delete --all
 ```
 
-You can manage the minikube cluster further but for that please refer to the [Minikube documentation](https://minikube.sigs.k8s.io/docs) as it is out of the scope of this workshop.
+You can manage the minikube cluster further, but for that, please refer to the [Minikube documentation](https://minikube.sigs.k8s.io/docs) as it is out of the scope of this workshop.
 
 We will use Minikube for the rest of the workshop, but you can also use other methods to install Kubernetes, such as `kubeadm`, `k3s`, or managed Kubernetes services like AWS EKS, GKE, or Azure AKS. The concepts and commands will be similar, but the installation process may vary.
 
@@ -206,7 +206,7 @@ Shared resources: Containers in a Pod share network namespace and volumes.
 
 Usually, Pods are not created directly, but via Deployments.
 
-Pod is meant to run a single instance of an application. In case of scaling, multiple Pods are created. (Replication)
+Pod is meant to run a single instance of an application. In the case of scaling, multiple Pods are created. (Replication)
 
 ```yaml
 apiVersion: v1
@@ -225,7 +225,7 @@ A ReplicaSet ensures that a specified number of pod replicas are running at any 
 
 A ReplicaSet is a higher-level abstraction that manages Pods, ensuring that the desired number of replicas are running.
 
-f a Pod fails, the ReplicaSet will automatically create a new one to maintain the desired count (this is its self-healing capability).
+If a Pod fails, the ReplicaSet will automatically create a new one to maintain the desired count (this is its self-healing capability).
 
 While a ReplicaSet handles replication and self-healing, it does not provide advanced deployment features like rolling updates or rollbacks. That's why Deployments are built on top of ReplicaSets.
 
@@ -234,7 +234,7 @@ A Deployment manages a set of Pods to run an application workload, usually one t
 
 A Deployment is a higher-level abstraction that manages Pods and ReplicaSets. Hierarchy: `Deployment > ReplicaSet > Pods`
 
-Describe desired state (e.g., number of replicas, container images, etc.) and the Deployment controller will ensure that the current state matches the desired state.
+Describe the desired state (e.g., number of replicas, container images, etc.) and the Deployment controller will ensure that the current state matches the desired state.
 
 ```yaml
 apiVersion: apps/v1
@@ -268,11 +268,9 @@ A Service provides a stable IP address and DNS name for a set of Pods, allowing 
 
 A Service can load balance traffic to multiple Pods, ensuring that the application is highly available and scalable.
 
-If you use a Deployment to run your app, that Deployment can create and destroy Pods dynamically. Because of that you
-don't know the IP addresses of the Pods in advance. A Service provides a stable endpoint to access those Pods.
+If you use a Deployment to run your app, that Deployment can create and destroy Pods dynamically. Because of that, you don't know the IP addresses of the Pods in advance. A Service provides a stable endpoint to access those Pods.
 
-Imagine situation where you have two sets of pods representing backend and frontend of your application. As pods are ephemeral,
-you need a way to access the backend pods from the frontend pods without knowing and managing their IP addresses. For that you can use a Service. which will serve as a single point of access to the backend pods.
+Imagine a situation where you have two sets of pods representing backend and frontend of your application. As pods are ephemeral, you need a way to access the backend pods from the frontend pods without knowing and managing their IP addresses. For that, you can use a Service. which will serve as a single point of access to the backend pods.
 
 Service Types (How you expose your application):
 - ClusterIP: The default. Exposes the Service on an internal IP address. Only accessible from within the cluster.
@@ -313,7 +311,7 @@ An API object that manages external access to the services in a cluster, typical
 
 An Ingress allows you to define rules for routing external HTTP/S traffic to specific services based on the request's host and path.
 
-In the image there is an example of Ingress that routes traffic to one Service.
+In the image, there is an example of Ingress that routes traffic to one Service.
 
 ![img.png](images/ingress.png)
 
@@ -541,7 +539,7 @@ To observe the ReplicaSet in action, you can run:
 kubectl get replicaset -w  # -w for watch, also works for pods and other resources
 ```
 
-Then in other terminal delete one of the pods and see the output.
+Then in other terminal, delete one of the pods and see the output.
 
 ```text
 NAME    DESIRED   CURRENT   READY   AGE
@@ -596,7 +594,7 @@ nginx   15        15        14      32m
 nginx   15        15        15      32m  # all pods ready
 ```
 
-Showing resulting pods:
+Showing the resulting pods:
 
 ```text
 NAME          READY   STATUS    RESTARTS   AGE
@@ -652,7 +650,7 @@ kubectl get deployments
 kubectl get deploy
 ```
 
-Combined output of get for Deployment, ReplicaSet and Pods:
+Combined output of get for Deployment, ReplicaSet, and Pods:
 
 ```bash
 kubectl get deploy,rs,po
@@ -766,7 +764,7 @@ You can see that the Deployment is back to the previous version `nginx:1.29.0`, 
 
 ## Rollouts - Declarative vs Imperative intermezzo
 
-In last example we used imperative command to rollback the Deployment. However, it is recommended to use declarative approach for managing Kubernetes resources.
+In last example, we used imperative command to rollback the Deployment. However, it is recommended to use a declarative approach for managing Kubernetes resources.
 
 So instead of using `kubectl rollout undo`, you can modify the Deployment YAML file to revert the image version back to `nginx:1.29.0` and apply it again with `kubectl apply -f examples/nginx_deployment.yaml`.
 
@@ -998,16 +996,16 @@ From the above-mentioned use cases, there are two important requirements that vo
 1. **Persistence**: Data should remain available even after the pod is deleted or restarted.
 2. **Sharing**: Data should be accessible by multiple containers within the same pod or across different pods.
 
-Thanks to the Kubernetes volume abstraction both requirements can be fulfilled. The Volume abstraction allows you to define a storage resource that can be used by one or more containers in a Pod. Unlike a container's filesystem, which is ephemeral and tied to the lifecycle of the container, a Volume exists independently of any individual container and can persist data across container restarts.
+Thanks to the Kubernetes volume abstraction, both requirements can be fulfilled. The Volume abstraction allows you to define a storage resource that can be used by one or more containers in a Pod. Unlike a container's filesystem, which is ephemeral and tied to the lifecycle of the container, a Volume exists independently of any individual container and can persist data across container restarts.
 
-There are different types of Volumes available in Kubernetes, each with its own use case. In this basic course following will be covered:
+There are different types of Volumes available in Kubernetes, each with its own use case. In this basic course, the following will be covered:
 - `persistentVolumeClaim`: A volume that is backed by a Persistent Volume (PV). It allows you to use persistent storage that can be shared across multiple Pods and survive Pod restarts.
 - `configMap`: A volume that contains configuration data from a ConfigMap. It allows you to inject configuration files into the Pod.
 - `secret`: A volume that contains sensitive data from a Secret. It allows you to inject sensitive data into the Pod without exposing it in the Pod specification.
 
 Plus some honorary mentions of other types of volumes (TODO move to special cases):
 - `emptyDir`: A temporary directory that is created when a Pod is assigned to a Node and exists as long as the Pod is running. It is useful for sharing data between containers in the same Pod.
-- `hostPath`: A directory on the Node's filesystem that is mounted into the Pod. It allows you to access files on the Node's filesystem from within the Pod which also make it very dangerous, as it can lead to security issues and data loss if not used carefully.
+- `hostPath`: A directory on the Node's filesystem that is mounted into the Pod. It allows you to access files on the Node's filesystem from within the Pod, which also makes it very dangerous, as it can lead to security issues and data loss if not used carefully.
 - `nfs`: A volume that allows you to mount an NFS share into the Pod. It is useful for sharing data between Pods across different Nodes.
 - `local`: A volume that allows you to use a local disk on the Node as a storage resource. It is useful for storing data that is specific to a single Node and does not need to be shared across Nodes.
 
@@ -1053,7 +1051,7 @@ spec:
       storage: 1Gi
 ```
 
-In case of dynamic provisioning, the cluster administrator sets up a StorageClass that defines how storage should be provisioned. When a user creates a PVC that specifies this StorageClass, Kubernetes automatically provisions a new PV that matches the PVC's requirements. This allows users to request storage without needing to know the details of how it is provisioned. The StorageClass can specify parameters like the type of storage (e.g., SSD, HDD), replication settings, and more. For dynamically provisioned PVs you don't create PVs manually.
+In case of dynamic provisioning, the cluster administrator sets up a StorageClass that defines how storage should be provisioned. When a user creates a PVC that specifies this StorageClass, Kubernetes automatically provisions a new PV that matches the PVC's requirements. This allows users to request storage without needing to know the details of how it is provisioned. The StorageClass can specify parameters like the type of storage (e.g., SSD, HDD), replication settings, and more. For dynamically provisioned PVs, you don't create PVs manually.
 
 ```yaml
 apiVersion: v1
@@ -1093,7 +1091,7 @@ PVC is in active use by a Pod when a Pod object exists that is using the PVC.
 
 #### PersistentVolume deletion protection finalizer
 
-Finalizers can be added on a PersistentVolume to ensure that PersistentVolumes having Delete reclaim policy are deleted only after the backing storage are deleted.
+Finalizers can be added on a PersistentVolume to ensure that PersistentVolumes having Delete reclaim policy are deleted only after the backing storage is deleted.
 
 - `external-provisioner.volume.kubernetes.io/finalizer` to dynamically and statically provisioned CSI (Container Storage Interface) Volumes.
 
@@ -1103,7 +1101,7 @@ More on that: https://kubernetes.io/blog/2024/08/16/kubernetes-1-31-prevent-pers
 
 #### StatefulSet
 
-TODO probably not needed in the basic course, but it is a good idea to mention it here as it is related to Persistent Volumes and PVCs. Separate file maybe
+TODO is probably not needed in the basic course, but it is a good idea to mention it here as it is related to Persistent Volumes and PVCs. Separate file maybe
 
 ### ConfigMap
 
@@ -1115,7 +1113,7 @@ Pods can consume configuration data from ConfigMaps in several ways:
 - files in a volume
 - through the Kubernetes API (dynamically during runtime)
 
-As the motivation for using ConfigMaps, consider the following example. Imagine there is a web application that needs to connect to a database. Instead of hardcoding the database host in the application code, you can store it in a ConfigMap and reference it in the Pod specification. Thanks to that with simple change in ConfigMap you can change the configuration of the application without rebuilding the image. This mechanism becomes be very useful when developing the app locally and deploying it to different environments (e.g. development, staging, production).
+As the motivation for using ConfigMaps, consider the following example. Imagine there is a web application that needs to connect to a database. Instead of hardcoding the database host in the application code, you can store it in a ConfigMap and reference it in the Pod specification. Thanks to that with simple change in ConfigMap, you can change the configuration of the application without rebuilding the image. This mechanism will be very useful when developing the app locally and deploying it to different environments (e.g. development, staging, production).
 
 Example of a ConfigMap:
 
@@ -1173,7 +1171,7 @@ In pod specification, you can reference the ConfigMap in several ways:
         - key: config.txt
           path: config.txt  # Mounts the 'config.txt' key as a file named 'config.txt'
   ```
-  - if items field is omitted, all keys from the ConfigMap will be mounted as files in the specified mountPath, with each key becoming a file named after the key.
+  - if the items field is omitted, all keys from the ConfigMap will be mounted as files in the specified mountPath, with each key becoming a file named after the key.
   ```yaml
   #spec.containers[].volumeMounts:
   - name: foo
@@ -1205,7 +1203,7 @@ data:
 immutable: true  # Makes the ConfigMap immutable
 ```
 
-NOTE: ConfigMap are not supposed to store large amounts of data (cannot exceed 1 MiB). If you need to store large configuration files, consider using a Persistent Volume or separate database.
+NOTE: ConfigMap is not supposed to store large amounts of data (cannot exceed 1 MiB). If you need to store large configuration files, consider using a Persistent Volume or separate database.
 
 ### Secret
 
@@ -1213,28 +1211,28 @@ Secrets are Kubernetes resources used to store sensitive information, such as pa
 
 Secrets are very similar to ConfigMaps, but they are specifically intended for sensitive data. They can be consumed by Pods in a similar way as ConfigMaps, such as through environment variables or mounted as files in a volume.
 
-By default, Secrets are stored unencrypted in Kubernetes etcd. Because of that anyone who has access to the Kubernetes API can read or modify the Secrets. Kubernetes suggest following best practices to secure Secrets:
+By default, Secrets are stored unencrypted in Kubernetes etcd. Because of that, anyone who has access to the Kubernetes API can read or modify the Secrets. Kubernetes suggest the following best practices to secure Secrets:
 - Use encryption at rest to encrypt Secrets in etcd.
 - Use RBAC (Role-Based Access Control) to restrict access to Secrets.
 - Restrict Secrets to only the Pods that need them.
 - Use external Secret store solutions like HashiCorp Vault, AWS Secrets Manager, or Azure Key Vault for managing sensitive data.
 
-Good practices for using Secrets: can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/security/secrets-good-practices/).
+Good practices for using Secrets can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/security/secrets-good-practices/).
 
 #### Types of Secrets
 
 Secrets can have different types, which determine how they are used and what data they can contain. The most common types of Secrets provided as built-ins by Kubernetes are:
 
-| Built-in Type                      | Usage                                 |
+| Built-in Type                       | Usage                                 |
 |-------------------------------------|---------------------------------------|
-| Opaque                             | arbitrary user-defined data           |
-| kubernetes.io/service-account-token| ServiceAccount token                  |
-| kubernetes.io/dockercfg            | serialized ~/.dockercfg file          |
-| kubernetes.io/dockerconfigjson     | serialized ~/.docker/config.json file |
-| kubernetes.io/basic-auth           | credentials for basic authentication  |
-| kubernetes.io/ssh-auth             | credentials for SSH authentication    |
-| kubernetes.io/tls                  | data for a TLS client or server       |
-| bootstrap.kubernetes.io/token      | bootstrap token data                  |
+| Opaque                              | arbitrary user-defined data           |
+| kubernetes.io/service-account-token | ServiceAccount token                  |
+| kubernetes.io/dockercfg             | serialized ~/.dockercfg file          |
+| kubernetes.io/dockerconfigjson      | serialized ~/.docker/config.json file |
+| kubernetes.io/basic-auth            | credentials for basic authentication  |
+| kubernetes.io/ssh-auth              | credentials for SSH authentication    |
+| kubernetes.io/tls                   | data for a TLS client or server       |
+| bootstrap.kubernetes.io/token       | bootstrap token data                  |
 From [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/secret/#secret-types)
 
 You can also create your own custom Secret types by specifying a `type` field in the Secret manifest. Empty string defaults to `Opaque` type.
@@ -1255,7 +1253,7 @@ Try to create a simple Opaque Secret with username and password:
     username: bXl1c2Vy   # base64 for 'myuser'
     password: bXlwYXNzd29yZA==   # base64 for 'mypassword'
   ```
-- If you are creating it through `kubectl create` you need to add `generic` subcommand to specify that you are creating `Opaque` Secret. In this case base64 encoding is done automatically.
+- If you are creating it through `kubectl create` you need to add `generic` subcommand to specify that you are creating `Opaque` Secret. In this case, base64 encoding is done automatically.
   ```bash
   kubectl create secret generic my-secret \
     --from-literal=username=myuser \
@@ -1269,7 +1267,7 @@ kubectl get secret
 NAME        TYPE     DATA   AGE
 my-secret   Opaque   2      2s
 ```
-Data column show the number of key-value pairs in the Secret.
+The Data column shows the number of key-value pairs in the Secret.
 
 Describe the created Secret:
 ```bash
@@ -1297,7 +1295,7 @@ Pods can consume Secrets in a similar way as ConfigMaps, such as through environ
 
 In case of secret not being available, the Pod will not start and kubelet will be attempting to restart the Pod until the Secret becomes available or the Pod is deleted.
 
-To use a Secret in a Pod you can:
+To use a Secret in a Pod, you can:
 - add secret reference in `env` block to set environment variables:
   ```yaml
   apiVersion: v1
@@ -1352,7 +1350,7 @@ Namespaces are a core feature of Kubernetes that provide a way to divide a clust
 
 Resources like Pods, Services, and Deployments exist within a namespace (always). When you don't specify a namespace, your resources are created in the default namespace.
 
-To create namespace you can use the following YAML manifest:
+To create namespace, you can use the following YAML manifest:
 
 ```yaml
 apiVersion: v1
@@ -1372,7 +1370,7 @@ Either way, you can check the created namespace with:
 kubectl get namespaces
 ```
 
-As a result you should see something like this:
+As a result, you should see something like this:
 ```text
 NAME                 STATUS   AGE
 default              Active   21d
@@ -1451,7 +1449,7 @@ spec:
     - name: nginx
       image: nginx:1.29.0
 ```
-Apply the manifest above and then, try `kubectl get po` and `kubectl get po -n my-namespace`. You will get following outputs respectively:
+Apply the manifest above and then, try `kubectl get po` and `kubectl get po -n my-namespace`. You will get the following outputs respectively:
 ```text
 No resources found in default namespace.
 ```
@@ -1499,7 +1497,7 @@ You can think about helm as an equivalent of `apt` or `yum` for Kubernetes, wher
 
 Instead of writing, managing, and applying dozens of YAML files for a single application (e.g., a web app, database, and cache), Helm allows you to define, install, and upgrade that entire application with a single command.
 
-Additionally with the possibility to use templating, you can create reusable charts that can be customized for different environments or configurations.
+Additionally, with the possibility to use templating, you can create reusable charts that can be customized for different environments or configurations.
 
 ### Using Helm
 
@@ -1686,7 +1684,7 @@ It is good practice to check the templates before installing the chart, to see w
 helm template my-first-chart ./my-first-chart/
 ```
 
-To see our change in action we have to install the chart.
+To see our change in action, we have to install the chart.
 ```bash
 helm install my-first-chart ./my-first-chart
 ```
@@ -1728,7 +1726,7 @@ But we can still access out nginx using the port-forwarding command provided in 
 kubectl --namespace <namespace> port-forward pod/<pod_name> 8080:80
 ```
 
-Now visit http://127.0.0.1:8080. Alternatively you can use kube proxy or other methods to access the service.
+Now visit http://127.0.0.1:8080. Alternatively, you can use kube proxy or other methods to access the service.
 
 ### Helm context and namespaces
 
@@ -1763,7 +1761,7 @@ local-path-storage   local-path-provisioner     1/1     1            1          
 prod                 my-first-chart             1/1     1            1           11s
 ```
 
-Additionally, you can set the namespace of different resources through `values.yaml` and it's respective templates. It can be useful when you want to use more of `as a code` approach and have all your resources defined in the chart, but don't forget that the namespace of helm release itself is still defined either through flag `--namespace` or by default context namespace. In theory, it is possible to have releases in different namespaces than resources, but it is not a common practice.
+Additionally, you can set the namespace of different resources through `values.yaml` and it's respective templates. It can be useful when you want to use more of `as a code` approach and have all your resources defined in the chart. Don't forget that the namespace of helm release itself is still defined either through flag `--namespace` or by default context namespace. In theory, it is possible to have releases in different namespaces than resources, but it is not a common practice.
 
 ### Helm and value overrides
 
@@ -1811,7 +1809,7 @@ And in the production environment using:
 helm install my-first-chart ./my-first-chart -f ./my-first-chart/values.prod.yaml --namespace dev #--create-namespace
 ```
 
-After that you can check the pods in each namespace:
+After that, you can check the pods in each namespace:
 ```bash
 kubectl get po -n dev -o wide
 kubectl get po -n prod -o wide
@@ -1838,7 +1836,7 @@ Then we can upgrade the release using the `helm upgrade` command:
 ```bash
 helm upgrade my-first-chart ./my-first-chart -f ./my-first-chart/values.prod.yaml --namespace prod
 ```
-In the output you can see that the revision number got increased:
+In the output, you can see that the revision number got increased:
 ```text
 Release "my-first-chart" has been upgraded. Happy Helming!
 NAME: my-first-chart
@@ -1867,7 +1865,7 @@ Alternatively you can use the upgrade command with flag `--install` to install t
 helm upgrade my-first-chart ./my-first-chart -f ./my-first-chart/values.prod.yaml --namespace prod
 ```
 
-Even though that we haven't changed anything with second upgrade, the revision number will be increased again. The current revision history can be checked with command `helm history <release_name>` where you need to use namespace flag if operating in other than default namespace:
+Even though we haven't changed anything with second upgrade, the revision number will be increased again. The current revision history can be checked with command `helm history <release_name>` where you need to use namespace flag if operating in other than default namespace:
 
 ```bash
 helm history my-first-chart -n prod
@@ -1903,11 +1901,7 @@ my-first-chart-85764564fb-pwprb   1/1     Running   0          5m56s   10.244.2.
 
 You can see that even with rollback the revision number is increased, and the status of the previous revisions is set to `superseded`.
 
-While the rollback is very powerful command it has some drawbacks. Similar to rollouts and rollbacks of Deployments, the `helm rollback` command is an imperative one and so it breaks the declarative configuration model of Kubernetes. This means that the state of the cluster after the rollback may not match the state defined in the chart's templates and values files. So it is generally better to use it only in case of emergency and not as a regular way of managing releases. A good example to use it is when a release goes wrong you can quickly rollback to the last working state to decrease the downtime to minimum. But after that it is necessary align your configuration with it.
-
-## Hands-on labs: creating and managing ConfigMaps, Secrets, and Helm charts
-
-TODO: Already done in previous sections, skipping it here.
+While the rollback is a very powerful command, it has some drawbacks. Similar to rollouts and rollbacks of Deployments, the `helm rollback` command is an imperative one and so it breaks the declarative configuration model of Kubernetes. This means that the state of the cluster after the rollback may not match the state defined in the chart's templates and values files. So it is generally better to use it only in case of emergency and not as a regular way of managing releases. A good example to use it is when a release goes wrong, you can quickly rollback to the last working state to decrease the downtime to minimum. But after that, it is necessary to align your configuration with it.
 
 ## Best practices for application management in Kubernetes
 
@@ -1940,7 +1934,7 @@ The most important aspects of Kubernetes security include:
 
 One of the most important aspects of Kubernetes security is the ability to control access to the Kubernetes API, as it is the central point of interaction with the cluster.
 
-Tha request to the APi server coming either from human user or Kubernetes ServiceAccount (e.g., from a Pod) goes through three stages:
+The request to the APi server coming either from human user or Kubernetes ServiceAccount (e.g., from a Pod) goes through three stages:
 1. **[Authentication](#authentication)**: The API server verifies the identity of the user or application making the request. This can be done using various methods, such as client certificates, bearer tokens, or external authentication providers (e.g., OpenID Connect).
 2. **[Authorization](#Authorization)**: After authentication, the API server checks if the user or application has the necessary permissions to perform the requested action. This is done using Role-Based Access Control (RBAC) or other authorization mechanisms.
    - [RBAC](#RBAC-Role-Based-Access-Control-in-Kubernetes) is the most commonly used authorization mechanism in Kubernetes.
@@ -1983,7 +1977,7 @@ Supported authentication methods:
 
 There is another special case for authentication, the **Anonymous requests**. When enabled, requests that are not rejected by other configured authentication methods are treated as anonymous requests, and given a username of `system:anonymous` and a group of `system:unauthenticated`.
 
-So far we have been using the certificate based authentication method when interacting with our cluster using `kubectl` even though we haven't explicitly configured it. This is because the minikube have created a client certificate for us and configured the kubeconfig file to use it. You can find the kubeconfig file in the `~/.kube/config` directory. It contains the information about the cluster, user, and context, including the client certificate and key in this case.
+So far we have been using the certificate based authentication method when interacting with our cluster using `kubectl` even though we haven't explicitly configured it. This is because the minikube has created a client certificate for us and configured the kubeconfig file to use it. You can find the kubeconfig file in the `~/.kube/config` directory. It contains the information about the cluster, user, and context, including the client certificate and key in this case.
 ```bash
 cat ~/.kube/config
 ```
@@ -2024,7 +2018,7 @@ users:
 
 ### Adding new user - certificate
 
-As was already stated Kubernetes by itself does not provide a built-in authentication mechanism, but it supports various authentication methods. One of these methods is using client certificates. This method is commonly used for users who need to access the Kubernetes API directly, such as administrators or developers.
+As was already stated, Kubernetes by itself does not provide a built-in authentication mechanism, but it supports various authentication methods. One of these methods is using client certificates. This method is commonly used for users who need to access the Kubernetes API directly, such as administrators or developers.
 
 Let's demonstrate this proces for our new user `Bob`. To add a new user to the cluster using client certificates, we need to follow these steps:
 
@@ -2142,7 +2136,7 @@ Let's demonstrate this proces for our new user `Bob`. To add a new user to the c
     kubectl get po
     ```
     
-    As a result we will get an error:  
+    As a result, we will get an error:  
     
     ```text
     Error from server (Forbidden): pods is forbidden: User "bob" cannot list resource "pods" in API group "" in the namespace "default"
@@ -2192,7 +2186,7 @@ Documentation: https://kubernetes.io/docs/reference/access-authn-authz/authoriza
 
 Once a user or application is authenticated (except `anonymous requests`), Kubernetes needs to determine whether they have the necessary permissions to perform the requested action. This is where authorization comes into play. You can see it as a second stap in the [schema](#authentication-and-authorization-with-kubernetes) provided above at the beginning of this section.
 
-The authorization process take place within the API server, which checks request attributes against all policies and might also consult other external services. Based on the result it allows or denies the request. Access denied by default policy is in place for all the resources, meaning that unless explicitly allowed, users and applications cannot perform any actions on the cluster resources.
+The authorization process takes place within the API server, which checks request attributes against all policies and might also consult other external services. Based on the result, it allows or denies the request. Access denied by default policy is in place for all the resources, meaning that unless explicitly allowed, users and applications cannot perform any actions on the cluster resources.
 
 There are several authorization modes available in Kubernetes:
 - **AlwaysAllow**: This mode allows all requests, regardless of the user's permissions. It is not recommended for production use, as it effectively disables authorization.
@@ -2202,7 +2196,7 @@ There are several authorization modes available in Kubernetes:
 - **ABAC (Attribute-Based Access Control)**: This mode allows you to define access control policies based on attributes of the user, resource, and action. It is less commonly used than RBAC and requires additional configuration.
 - **RBAC (Role-Based Access Control)**: This is the most commonly used authorization mode in Kubernetes. It allows you to define fine-grained access control policies based on roles and permissions. RBAC is enabled by default in most Kubernetes distributions, including Minikube.
 
-Nowadays, the `RBAC` is the de-facto standard and the recommended way to manage authorization in Kubernetes clusters. Because of that we will focus on it in the next section. The other modes exceed the scope of this course, but you can find more information about them in the Kubernetes [documentation](https://kubernetes.io/docs/reference/access-authn-authz/authorization/#authorization-modules).
+Nowadays, the `RBAC` is the de-facto standard and the recommended way to manage authorization in Kubernetes clusters. Because of that, we will focus on it in the next section. The other modes exceed the scope of this course, but you can find more information about them in the Kubernetes [documentation](https://kubernetes.io/docs/reference/access-authn-authz/authorization/#authorization-modules).
 
 TODO maybe have a look at attributes and verbs https://kubernetes.io/docs/reference/access-authn-authz/authorization/#request-attributes-used-in-authorization
 
@@ -2228,7 +2222,7 @@ kubectl auth can-i list pods --namespace default --as bob
 no
 ```
 
-This command returns `no`, indicating that Bob does not have permission to list Pods in the default namespace. This is expected, as we haven't granted any permissions to Bob yet.
+This command returns `no`, indicating that Bob does not have permission to list Pods in the default namespace. This is expected, as we haven't granted any permission to Bob yet.
 
 Note that the command `kubectl auth` is for inspection of authorization rules and does not tell you anything about the authentication.
 
@@ -2514,7 +2508,7 @@ A namespace can configure any or all modes, or even set a different level for di
 
 #### Third party admission controllers
 
-There are also third-party admission controllers that can be used to enforce additional security policies or perform custom validation and mutation. Some popular third-party admission controllers include:
+There are also third-party admission controllers that can be used to enforce additional security policies or perform custom validation and mutations. Some popular third-party admission controllers include:
 - **[OPA Gatekeeper](https://github.com/open-policy-agent/gatekeeper)**
 - **[Kyverno](https://kyverno.io/policies/pod-security/)**
 - **[Kubewarden](https://github.com/kubewarden)**
@@ -2590,7 +2584,7 @@ Let's do a demo to enforce the most secure profile, Restricted, and see how it w
     seccompProfile (pod or container "nginx" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
     ```
     
-    You might se following problems:
+    You might have the following problems:
     - `allowPrivilegeEscalation != false`: The container must explicitly set `securityContext.allowPrivilegeEscalation` to `false`.
     - `unrestricted capabilities`: The container must drop all capabilities by setting `securityContext.capabilities.drop` to `["ALL"]`.
     - `runAsNonRoot != true`: The Pod or container must set `securityContext.runAsNonRoot` to `true`.
@@ -2598,9 +2592,8 @@ Let's do a demo to enforce the most secure profile, Restricted, and see how it w
 
 3. **Fix the Pod manifest**
 
-    We need to update the Pod manifest to comply with the `restricted` standard. Here is an updated version of the Pod manifest that includes the necessary security context settings: [pod-secure.yaml](examples/pod_security/pod-secure.yaml)
+    We need to update the Pod manifest to comply with the `restricted` standard. Here is an updated version of the Pod manifest that includes the necessary security context settings: [pod_restricted.yaml](examples/pod_security/pod_restricted.yaml)
     
-    See updated Pod manifest: [pod_restricted.yaml](examples/pod_security/pod_restricted.yaml)
     ```yaml
     apiVersion: v1
     kind: Pod
@@ -2638,7 +2631,7 @@ Let's do a demo to enforce the most secure profile, Restricted, and see how it w
     pod-restricted   0/1     CrashLoopBackOff   1 (7s ago)   10s
     ```
     
-    In such case we should have a look at the Pod events and logs to see what is going on:
+    In such case, we should have a look at the Pod events and logs to see what is going on:
     ```bash 
     kubectl describe pod pod-restricted -n restricted-ns
     kubectl logs pod-restricted -n restricted-ns
@@ -2661,7 +2654,7 @@ Let's do a demo to enforce the most secure profile, Restricted, and see how it w
     nginx: [emerg] mkdir() "/var/cache/nginx/client_temp" failed (13: Permission denied)
     ```
     
-    The log output suggests problems with `read-only file system`. These problems appear because we have used the restrictive policy which enforces the security context `runAsNonRoot: true` and which implicitly sets `readOnlyRootFilesystem: true`. As a result of that the Nginx container is not able to create necessary temporary files and directories, leading to permission denied errors. 
+    The log output suggests problems with `read-only file system`. These problems appear because we have used the restrictive policy which enforces the security context `runAsNonRoot: true` and which implicitly sets `readOnlyRootFilesystem: true`. As a result of that, the Nginx container is not able to create necessary temporary files and directories, leading to permission denied errors.
     
     How to fix that and make the nginx container work properly while enforcing these constraints? In general, you need to mount specific directories as writable volumes. See the extended example: [read_only_fs.md](./special_cases/read_only_fs.md)
 
@@ -2671,7 +2664,7 @@ Network policies are a way to control the communication between Pods and Service
 
 By default, Kubernetes networking is flat, meaning all Pods can communicate with each other and with the outside world. This is great for ease of use but poses a significant security risk.
 
-On the other hand once a network policy is applied to a Pod, it will block all traffic to and from that Pod unless explicitly allowed by the policy. This means that if you create a network policy for a Pod, you need to define all the allowed traffic for that Pod, otherwise it will be isolated.
+On the other hand, once a network policy is applied to a Pod, it will block all traffic to and from that Pod unless explicitly allowed by the policy. This means that if you create a network policy for a Pod, you need to define all the allowed traffic for that Pod, otherwise it will be isolated.
 
 You can think of a network policy as a firewall rule for your Pods. They are a fundamental tool for implementing a Zero Trust security model within your cluster.
 
@@ -2691,7 +2684,7 @@ You can think of a network policy as a firewall rule for your Pods. They are a f
     - `ipBlock`: Allowing traffic from/to specific IP address ranges (CIDR blocks).
     `ports`: Specifying the port number or range for the allowed traffic.
 
-Each rule in `ingress`/`egress` allows the trafic which matches both `from`/`to` and `ports` conditions. Different rules in the same section are combined using a logical OR.
+Each rule in `ingress`/`egress` allows the traffic which matches both `from`/`to` and `ports` conditions. Different rules in the same section are combined using a logical OR.
 
 Let's look at an example to illustrate these concepts:
 
@@ -2756,7 +2749,7 @@ Without a CNI plugin, your pods would be isolated and unable to communicate, ren
 
 The network policies (as shown above) depends on the CNI plugin. A policy is a simple rule  rules in the Kubernetes API, but its enforcement mechanism is handled by CNI plugin. 
 
-Because of that there is (or need to be)always some CNI plugin installed in the cluster. Some popular CNI plugins include:
+Because of that, there is (or need to be)always some CNI plugin installed in the cluster. Some popular CNI plugins include:
 - **[Cilium](https://cilium.io/)**
 - **[Calico](https://www.tigera.io/project-calico/)**
 
@@ -2802,7 +2795,7 @@ spec:
   - Egress
 ```
 
-#### Default deny all ingress and egress traffic
+#### Default denies all ingress and egress traffic
 
 Default deny all ingress and egress traffic is a combination of the two previous policies. It ensures that no traffic can enter or leave the pods unless explicitly allowed by other network policies. It is a good practice to implement this policy as a baseline for securing your cluster.
 
@@ -2841,7 +2834,7 @@ Let's do a demo to illustrate how network policies work in practice. We will cre
 
 1. **Initial State**
 
-    Setup two pods (nginx server and busybox client) in two different namespaces (`ns-a` and `ns-b`). For the server pod we will also need a service.
+    Setup two pods (nginx server and busybox client) in two different namespaces (`ns-a` and `ns-b`). For the server pod, we will also need a service.
     
     Apply the manifest [pods_and_namespaces.yaml](./examples/network_policy/pods_and_namespaces.yaml) to create two namespaces and two pods:
     
@@ -2932,7 +2925,7 @@ Let's do a demo to illustrate how network policies work in practice. We will cre
     <p>If you see this page, the nginx web server is successfully installed and
     working. Further configuration is required.</p>
     
-    <p>For online documentation and support please refer to
+    <p>For online documentation and support, please refer to
     <a href="http://nginx.org/">nginx.org</a>.<br/>
     Commercial support is available at
     <a href="http://nginx.com/">nginx.com</a>.</p>
@@ -3057,7 +3050,7 @@ Let's do a demo to illustrate how network policies work in practice. We will cre
     ns-b        default-deny-all                           <none>         3m
     ```
    
-    Unfortunately this is not enough. The communication is still blocked:
+    Unfortunately, this is not enough. The communication is still blocked:
 
     ```bash
     kubectl exec -n ns-a client-pod -- wget -qO- server-svc.ns-b.svc.cluster.local
@@ -3156,7 +3149,7 @@ Let's do a demo to illustrate how network policies work in practice. We will cre
 
 ### Cluster wide network policies
 
-Because network policies are namespace-scoped, they only apply to pods within the same namespace. This means that you need to implement network policies in each namespace where you want to enforce them. Unfortunately kubernetes Network Policies does not support cluster-wide policies out of the box.
+Because network policies are namespace-scoped, they only apply to pods within the same namespace. This means that you need to implement network policies in each namespace where you want to enforce them. Unfortunately, kubernetes Network Policies do not support cluster-wide policies out of the box.
 
 This is quite inconvenient and error-prone, as you need to remember to create and maintain the policies in each namespace or utilize some kind of automation (special admission controllers or GitOps tools like ArgoCD/Flux) to do it for you.
 
@@ -3165,7 +3158,7 @@ Luckily, there are some third-party tools that can help you with that. These too
 - **[Cilium](https://cilium.io/)**  we are already using this in our Minikube setup
 - **[Calico](https://www.tigera.io/project-calico/)**
 
-In case of Cilium, a cluster-wide default deny policy could look like this:
+In the case of Cilium, a cluster-wide default deny policy could look like this:
 
 ```yaml
 apiVersion: cilium.io/v2
@@ -3178,7 +3171,7 @@ spec:
 
   # The endpointSelector specifies which pods this policy will apply to.
   endpointSelector:
-    # A matchExpressions block allows for more complex label matching.
+    # A matchExpressions block allows for more complex labels matching.
     matchExpressions:
     # The key is the label that will be evaluated, in this case, the pod's namespace.
     - key: io.kubernetes.pod.namespace
@@ -3234,5 +3227,3 @@ spec:
 ```
 
 This policy will isolate all pods in the cluster, including system pods in the `kube-system` namespace. This can lead to significant disruptions in cluster operations, as essential services like DNS, networking or API server communication may be blocked.
-
-## Hands-on labs: Configuration of RBAC/Security Context and network security policies
