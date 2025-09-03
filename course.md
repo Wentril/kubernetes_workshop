@@ -388,11 +388,13 @@ First make sure that you have correct configuration to connect to your cluster (
 
 ```bash
 kubectl config get-contexts
-CURRENT   NAME             CLUSTER          AUTHINFO         NAMESPACE
-*         docker-desktop   docker-desktop   docker-desktop   
-          p04              p04              p04
-          t04              t04              t04
-          
+```
+```text
+CURRENT   NAME            CLUSTER    AUTHINFO   NAMESPACE
+*         minikube        minikube   minikube   default
+```
+
+```bash          
 kubectl config use-context <context-name>
 ```
 
@@ -406,12 +408,19 @@ kubectl get namespaces
 ```
 
 ```txt
-NAME                 STATUS   AGE
-default              Active   4d17h
-kube-node-lease      Active   4d17h
-kube-public          Active   4d17h
-kube-system          Active   4d17h
-local-path-storage   Active   4d17h
+NAME           STATUS   ROLES           AGE     VERSION
+minikube       Ready    control-plane   7m17s   v1.33.1
+minikube-m02   Ready    <none>          6m16s   v1.33.1
+minikube-m03   Ready    <none>          4m12s   v1.33.1
+```
+
+```txt
+NAME              STATUS   AGE
+cilium-secrets    Active   7m20s
+default           Active   7m25s
+kube-node-lease   Active   7m25s
+kube-public       Active   7m25s
+kube-system       Active   7m25s
 ```
 
 ```bash
