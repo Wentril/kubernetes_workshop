@@ -192,6 +192,20 @@ This starts minikube with two nodes so we can later demonstrate even some advanc
 
 We also set up `cilium` as a requested CNI plugin, which will be explained later in the workshop.
 
+### Install Helm
+
+Helm is a package manager for Kubernetes that helps you manage Kubernetes applications. It allows you to define, install, and upgrade complex Kubernetes applications using Helm charts.
+
+See the instruction in official documentation: https://helm.sh/docs/intro/install/
+
+```bash
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+```
+
+We will use helm later in the course.
+
 ## Get started with Kubernetes: pods, deployments, services
 
 ### Pod
