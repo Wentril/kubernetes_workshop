@@ -732,9 +732,9 @@ replicaset.apps/nginx-6b66bfb4f   3         3         3       4m38s   nginx     
 replicaset.apps/nginx-cb6645bd8   0         0         0       6m8s    nginx        nginx:1.29.0   app=nginx-web,pod-template-hash=cb6645bd8
 
 NAME                        READY   STATUS    RESTARTS   AGE     IP            NODE              NOMINATED NODE   READINESS GATES
-pod/nginx-6b66bfb4f-hfk8v   1/1     Running   0          2m21s   10.244.1.25   desktop-worker2   <none>           <none>
-pod/nginx-6b66bfb4f-ptch6   1/1     Running   0          4m38s   10.244.2.25   desktop-worker    <none>           <none>
-pod/nginx-6b66bfb4f-s96mv   1/1     Running   0          2m37s   10.244.1.24   desktop-worker2   <none>           <none>
+pod/nginx-6b66bfb4f-hfk8v   1/1     Running   0          2m21s   10.244.1.25   minikube-m02      <none>           <none>
+pod/nginx-6b66bfb4f-ptch6   1/1     Running   0          4m38s   10.244.2.25   minikube-m03      <none>           <none>
+pod/nginx-6b66bfb4f-s96mv   1/1     Running   0          2m37s   10.244.1.24   minikube-m02      <none>           <none>
 ```
 
 You can see that the new version of Deployment is running with the new image `nginx:1.28.0`. There is a new ReplicaSet `nginx-6b66bfb4f` which is serving current pods, while the old ReplicaSet `nginx-cb6645bd8` is still present but not serving any Pods.
@@ -778,9 +778,9 @@ replicaset.apps/nginx-6b66bfb4f   0         0         0       13m   nginx       
 replicaset.apps/nginx-cb6645bd8   3         3         3       15m   nginx        nginx:1.29.0   app=nginx-web,pod-template-hash=cb6645bd8
 
 NAME                        READY   STATUS    RESTARTS   AGE   IP            NODE              NOMINATED NODE   READINESS GATES
-pod/nginx-cb6645bd8-mzwxx   1/1     Running   0          39s   10.244.2.27   desktop-worker    <none>           <none>
-pod/nginx-cb6645bd8-xb27f   1/1     Running   0          42s   10.244.2.26   desktop-worker    <none>           <none>
-pod/nginx-cb6645bd8-xqv26   1/1     Running   0          41s   10.244.1.26   desktop-worker2   <none>           <none>
+pod/nginx-cb6645bd8-mzwxx   1/1     Running   0          39s   10.244.2.27   minikube-m03      <none>           <none>
+pod/nginx-cb6645bd8-xb27f   1/1     Running   0          42s   10.244.2.26   minikube-m03      <none>           <none>
+pod/nginx-cb6645bd8-xqv26   1/1     Running   0          41s   10.244.1.26   minikube-m02      <none>           <none>
 ```
 
 You can see that the Deployment is back to the previous version `nginx:1.29.0`, and the old ReplicaSet `nginx-6b66bfb4f` is no longer serving any Pods.
@@ -848,9 +848,9 @@ You can see that the endpoints are the IP addresses of the Pods that are selecte
 
 ```text
 NAME                        READY   STATUS    RESTARTS        AGE     IP           NODE              NOMINATED NODE   READINESS GATES
-pod/nginx-cb6645bd8-9cfx6   1/1     Running   2               2d23h   10.244.1.2   desktop-worker2   <none>           <none>
-pod/nginx-cb6645bd8-fqd5q   1/1     Running   2               2d23h   10.244.1.3   desktop-worker2   <none>           <none>
-pod/nginx-cb6645bd8-g9gsc   1/1     Running   2 (5h11m ago)   2d23h   10.244.2.2   desktop-worker    <none>           <none>
+pod/nginx-cb6645bd8-9cfx6   1/1     Running   2               2d23h   10.244.1.2   minikube-m02      <none>           <none>
+pod/nginx-cb6645bd8-fqd5q   1/1     Running   2               2d23h   10.244.1.3   minikube-m02      <none>           <none>
+pod/nginx-cb6645bd8-g9gsc   1/1     Running   2 (5h11m ago)   2d23h   10.244.2.2   minikube-m03      <none>           <none>
 ```
 
 ## Accessing the service
@@ -1735,7 +1735,7 @@ NAME                                        DESIRED   CURRENT   READY   AGE    C
 replicaset.apps/my-first-chart-85764564fb   1         1         1       101s   my-first-chart   nginx:1.29.0   app.kubernetes.io/instance=my-first-chart,app.kubernetes.io/name=my-first-chart,pod-template-hash=85764564fb
 
 NAME                                  READY   STATUS    RESTARTS   AGE    IP           NODE             NOMINATED NODE   READINESS GATES
-pod/my-first-chart-85764564fb-tv5tj   1/1     Running   0          101s   10.244.2.6   desktop-worker   <none>           <none>
+pod/my-first-chart-85764564fb-tv5tj   1/1     Running   0          101s   10.244.2.6   minikube-m03     <none>           <none>
 
 NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE    SELECTOR
 service/kubernetes          ClusterIP      10.96.0.1       <none>        443/TCP   27d    <none>
@@ -1839,14 +1839,14 @@ kubectl get po -n prod -o wide
 ```
 ```text
 NAME                              READY   STATUS    RESTARTS   AGE     IP           NODE              NOMINATED NODE   READINESS GATES
-my-first-chart-85764564fb-mmgwz   1/1     Running   0          2m34s   10.244.1.6   desktop-worker2   <none>           <none>
-my-first-chart-85764564fb-xfzj2   1/1     Running   0          2m34s   10.244.2.9   desktop-worker    <none>           <none>
+my-first-chart-85764564fb-mmgwz   1/1     Running   0          2m34s   10.244.1.6   minikube-m02      <none>           <none>
+my-first-chart-85764564fb-xfzj2   1/1     Running   0          2m34s   10.244.2.9   minikube-m03      <none>           <none>
 ```
 ```text
 NAME                              READY   STATUS    RESTARTS   AGE     IP            NODE              NOMINATED NODE   READINESS GATES
-my-first-chart-85764564fb-fkr5h   1/1     Running   0          2m25s   10.244.1.8    desktop-worker2   <none>           <none>
-my-first-chart-85764564fb-hkp5c   1/1     Running   0          2m25s   10.244.2.10   desktop-worker    <none>           <none>
-my-first-chart-85764564fb-hshwh   1/1     Running   0          2m25s   10.244.1.7    desktop-worker2   <none>           <none>
+my-first-chart-85764564fb-fkr5h   1/1     Running   0          2m25s   10.244.1.8    minikube-m02      <none>           <none>
+my-first-chart-85764564fb-hkp5c   1/1     Running   0          2m25s   10.244.2.10   minikube-m03      <none>           <none>
+my-first-chart-85764564fb-hshwh   1/1     Running   0          2m25s   10.244.1.7    minikube-m02      <none>           <none>
 ```
 
 ### Helm release management - `upgrade`, `rollback` and `history`
@@ -1876,11 +1876,11 @@ kubectl get po -n prod -o wide
 
 ```text
 NAME                              READY   STATUS    RESTARTS   AGE     IP            NODE              NOMINATED NODE   READINESS GATES
-my-first-chart-85764564fb-fkr5h   1/1     Running   0          6m16s   10.244.1.8    desktop-worker2   <none>           <none>
-my-first-chart-85764564fb-hkp5c   1/1     Running   0          6m16s   10.244.2.10   desktop-worker    <none>           <none>
-my-first-chart-85764564fb-hshwh   1/1     Running   0          6m16s   10.244.1.7    desktop-worker2   <none>           <none>
-my-first-chart-85764564fb-pwprb   1/1     Running   0          3s      10.244.2.11   desktop-worker    <none>           <none>
-my-first-chart-85764564fb-x4vkr   1/1     Running   0          3s      10.244.1.9    desktop-worker2   <none>           <none>
+my-first-chart-85764564fb-fkr5h   1/1     Running   0          6m16s   10.244.1.8    minikube-m02      <none>           <none>
+my-first-chart-85764564fb-hkp5c   1/1     Running   0          6m16s   10.244.2.10   minikube-m03      <none>           <none>
+my-first-chart-85764564fb-hshwh   1/1     Running   0          6m16s   10.244.1.7    minikube-m02      <none>           <none>
+my-first-chart-85764564fb-pwprb   1/1     Running   0          3s      10.244.2.11   minikube-m03      <none>           <none>
+my-first-chart-85764564fb-x4vkr   1/1     Running   0          3s      10.244.1.9    minikube-m02      <none>           <none>
 ```
 
 Alternatively you can use the upgrade command with flag `--install` to install the chart if it is not already installed, or just upgrade it if it is already installed.
@@ -1917,9 +1917,9 @@ REVISION        UPDATED                         STATUS          CHART           
 And pod replicas will be reverted to the previous number:
 ```text
 NAME                              READY   STATUS    RESTARTS   AGE     IP            NODE              NOMINATED NODE   READINESS GATES
-my-first-chart-85764564fb-fkr5h   1/1     Running   0          12m     10.244.1.8    desktop-worker2   <none>           <none>
-my-first-chart-85764564fb-hkp5c   1/1     Running   0          12m     10.244.2.10   desktop-worker    <none>           <none>
-my-first-chart-85764564fb-pwprb   1/1     Running   0          5m56s   10.244.2.11   desktop-worker    <none>           <none>
+my-first-chart-85764564fb-fkr5h   1/1     Running   0          12m     10.244.1.8    minikube-m02      <none>           <none>
+my-first-chart-85764564fb-hkp5c   1/1     Running   0          12m     10.244.2.10   minikube-m03      <none>           <none>
+my-first-chart-85764564fb-pwprb   1/1     Running   0          5m56s   10.244.2.11   minikube-m03      <none>           <none>
 ```
 
 You can see that even with rollback the revision number is increased, and the status of the previous revisions is set to `superseded`.
