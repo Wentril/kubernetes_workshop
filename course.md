@@ -921,6 +921,32 @@ If you are using Minikube, you can enable the Ingress addon:
 minikube addons enable ingress
 ```
 
+### Installation in Minikube (lab environment specific)
+
+As we are using a multi-node Minikube cluster in our lab environment, we need to do some additional steps. We are using a special taint on the control plane node to prevent normal pods from scheduling there. Unfortunately, the ingress addon is not ready for that, so we need to remove that taint for a moment so that the ingress controller can be scheduled on the control plane node. In case you are working with different setup, you can skip this step.
+
+```bash
+kubectl taint nodes minikube node-role.kubernetes.io/control-plane:NoSchedule-
+```
+
+Then enable the ingress addon:
+
+```bash
+minikube addons enable ingress
+```
+
+And now set the taint back:
+
+```bash
+kubectl taint nodes minikube node-role.kubernetes.io/control-plane:NoSchedule
+```
+
+There is additional step which is needed if you are using workshop labs. Because of specific setup of our labs we will need to patch one of the `ingress-nginx-controller` services. This will allow us to use predefined proxy which will channel incoming communication to your cluster in minikube. Please run the following command: 
+
+```bash
+kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"externalIPs": ["192.168.49.2"], "externalTrafficPolicy": ""}}'
+```
+
 ### Installation using Helm:
 
 ```bash
