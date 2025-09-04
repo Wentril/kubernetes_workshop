@@ -20,7 +20,6 @@ using Kubernetes v1.33.4
 - Advanced Resources: ConfigMaps, Secrets, Persistent Volumes
 - Kubernetes namespace and resource isolation
 - Application management with Helm (package manager for Kubernetes)
-- Hands-on labs: creating and managing ConfigMaps, Secrets, and Helm charts
 - Best practices for application management in Kubernetes
 ### Kubernetes Security
 - Introduction to Kubernetes security
@@ -28,7 +27,6 @@ using Kubernetes v1.33.4
 - RBAC (Role-Based Access Control) in Kubernetes
 - Security contexts and pod isolation, pod admission controls
 - Network policies and network security in Kubernetes
-- Hands-on labs: Configuration of RBAC/Security Context and network security policies
 ### Monitoring, troubleshooting
 - Monitoring and logging in Kubernetes
 - Tools for troubleshooting and diagnostics

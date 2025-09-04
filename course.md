@@ -2,12 +2,214 @@
 
 ## Introduction/Summary of Container Technologies (Docker), Basics
 
-TODO
+### Containers
 
-Container vs Image:
-- **Image**: A ready to run SW package, which includes the application and its dependencies, but is not running.
-- **Container**: A running instance of an image, which includes the application and its dependencies.
-  - it should be immutable and stateless (as much as possible)
+Containers are self-contained, lightweight packages that hold everything an application needs to run: the code, a runtime, system tools, libraries, and settings.
+
+They isolate an application and its dependencies from both the host machine and other containers.
+
+**The Problem Containers Solve** - "It works on my machine!" - Containers ensure that an application runs the same way regardless of where it's deployed, solving issues related to environment differences. (or they should in ideal world)
+
+### Containerization vs Virtualization
+
+Containers are often compared to Virtual Machines (VMs), but they are fundamentally different.
+- Virtual Machines virtualize the entire hardware stack, including the operating system. Each VM runs a full copy of an operating system, making them large and resource-intensive.
+- Containers virtualize the operating system at the kernel level. They share the host machine's OS kernel, making them much smaller, more efficient, and faster to start.
+
+### Key concepts of containerization
+
+- **Image:** A ready to run SW package, which includes the application and its dependencies, but is not running. It serves as a template or blueprint for creating containers.
+- **Container:** A running instance of an image, which includes the application and its dependencies. It's a running process with its own file system, network, and isolated resources.
+  - it should be immutable and stateless (as much as possible, best practice)
+- **Container Engine:** The software that manages the container lifecycle, including building, running, and distributing images and containers.
+- **Docker:** The most widely used containerization platform, which provides an easy-to-use toolkit for building, sharing, and running containers.
+
+### Quick docker demo
+
+In a short demo, we will demonstrate the preparation of a simple Docker image and running a container from it. Container will run a simple Flask web server.
+
+Have a look at files in [./examples/docker_intro/](./examples/docker_intro/), the folder contains:
+- `app.py` - python code for a simple Flask web server
+- `requirements.txt` - python dependencies
+- `Dockerfile` - instructions for building the Docker image
+- `docker-compose.yaml` - instructions for running the container with docker-compose
+
+The python part is not very interesting for our demo, and we could achieve the same with other languages, but python is easy to read and understand.
+
+If we were running the code directly on our machine, we would first install dependencies from `requirements.txt` and then run `app.py` to start the application. Our web server would be listening on port `5000`.
+
+If we want to run the app with docker instead, we need to build a Docker image first. The `Dockerfile` contains instructions for building the image. Let's have a look at it: [./examples/docker_intro/Dockerfile](./examples/docker_intro/Dockerfile)
+
+```Dockerfile
+# Use a slim Python 3.12.3 image as the base
+FROM python:3.12.3-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the requirements file and install dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Copy the application code
+COPY app.py .
+
+# Tell Docker that the container listens on port 5000
+EXPOSE 5000
+
+# Run the application when the container starts
+CMD ["python", "app.py"]
+```
+
+To build the image, run the following command:
+
+```bash
+docker build -t flask-hello-world ./examples/docker_intro/
+```
+
+You should see the output of the command similar to this:
+
+```text
+[+] Building 21.3s (10/10) FINISHED                                                                                                                                          docker:default
+ => [internal] load build definition from Dockerfile                                                                                                                                   0.1s
+ => => transferring dockerfile: 470B                                                                                                                                                   0.0s
+ => [internal] load metadata for docker.io/library/python:3.12.3-slim                                                                                                                  0.8s
+ => [internal] load .dockerignore                                                                                                                                                      0.0s
+ => => transferring context: 2B                                                                                                                                                        0.0s
+ => [1/5] FROM docker.io/library/python:3.12.3-slim@sha256:afc139a0a640942491ec481ad8dda10f2c5b753f5c969393b12480155fe15a63                                                            9.1s
+ => => resolve docker.io/library/python:3.12.3-slim@sha256:afc139a0a640942491ec481ad8dda10f2c5b753f5c969393b12480155fe15a63                                                            0.0s
+ => => sha256:afc139a0a640942491ec481ad8dda10f2c5b753f5c969393b12480155fe15a63 1.65kB / 1.65kB                                                                                         0.0s
+ => => sha256:fd3817f3a855f6c2ada16ac9468e5ee93e361005bd226fd5a5ee1a504e038c84 1.37kB / 1.37kB                                                                                         0.0s
+ => => sha256:cf001c2f8af7214144935ae5b37c9e626ccf789117c10c1f691766d4658f1b1e 6.69kB / 6.69kB                                                                                         0.0s
+ => => sha256:09f376ebb190216b0459f470e71bec7b5dfa611d66bf008492b40dcc5f1d8eae 29.15MB / 29.15MB                                                                                       1.0s
+ => => sha256:276709cbedc1f168290ee408fca2af2aacfeb4f922ddca125e9e8047f9841479 3.51MB / 3.51MB                                                                                         0.3s
+ => => sha256:2e133733af76c2a11aee79b7cfc733cc8065bc538d74b80ad65846d336a0904e 12.00MB / 12.00MB                                                                                       0.8s
+ => => sha256:ded8879d9a790c3944bc22c2bed1606a9a2d4d293f2a32399fb183d577c0190a 243B / 243B                                                                                             0.6s
+ => => sha256:3cf9507408dcb24084c3a20ccd068986cc37d1b13629d357f402581af5177013 3.05MB / 3.05MB                                                                                         1.0s
+ => => extracting sha256:09f376ebb190216b0459f470e71bec7b5dfa611d66bf008492b40dcc5f1d8eae                                                                                              4.5s
+ => => extracting sha256:276709cbedc1f168290ee408fca2af2aacfeb4f922ddca125e9e8047f9841479                                                                                              0.4s
+ => => extracting sha256:2e133733af76c2a11aee79b7cfc733cc8065bc538d74b80ad65846d336a0904e                                                                                              1.5s
+ => => extracting sha256:ded8879d9a790c3944bc22c2bed1606a9a2d4d293f2a32399fb183d577c0190a                                                                                              0.0s
+ => => extracting sha256:3cf9507408dcb24084c3a20ccd068986cc37d1b13629d357f402581af5177013                                                                                              0.8s
+ => [internal] load build context                                                                                                                                                      0.1s
+ => => transferring context: 366B                                                                                                                                                      0.0s
+ => [2/5] WORKDIR /app                                                                                                                                                                 1.0s
+ => [3/5] COPY requirements.txt .                                                                                                                                                      0.1s
+ => [4/5] RUN pip install -r requirements.txt                                                                                                                                          9.4s
+ => [5/5] COPY app.py .                                                                                                                                                                0.1s
+ => exporting to image                                                                                                                                                                 0.6s
+ => => exporting layers                                                                                                                                                                0.6s
+ => => writing image sha256:7105557f70403c522ce6d9fc7ff60cfc85d51dedd6d95b943b1ab1ef16252a36                                                                                           0.0s
+ => => naming to docker.io/library/flask-hello-world                                                                                                                                   0.0s
+```
+
+This command will build the Docker image in the context of directory `./examples/docker_intro/` and tag it as `flask-hello-world`.
+
+We can list the images we have on our machine with:
+
+```bash
+docker images
+```
+
+```txt
+REPOSITORY                    TAG       IMAGE ID       CREATED              SIZE
+flask-hello-world             latest    7105557f7040   About a minute ago   145MB
+```
+
+We can now run this image with command:
+
+```bash
+docker run -d -p 8000:5000 --name flask-web-server flask-hello-world
+```
+
+This command uses several options and parameters:
+- `-d` - detached mode, run the container in the background so we can still use the current terminal
+- `-p 8000:5000` - map port 5000 in the container to port 8000 on the host machine, so we can access the web server from outside the container
+- `--name flask-web-server` - give the container a name, so we can easily refer to it later
+- `flask-hello-world` - the name of the image to run
+
+As a response, we get the container ID:
+
+```text
+031fb9c7b77d6f1e5c3f4e8b6c8e2f4c1b6e5f4e8b6c8e2f4c1b6e5f4e8b6c8e
+```
+
+To see which containers are running, we can use the following command:
+
+```bash
+docker ps
+```
+```text
+CONTAINER ID   IMAGE                                 COMMAND                  CREATED         STATUS         PORTS                                                                                                                                  NAMES
+031fb9c7b77d   flask-hello-world                     "python app.py"          7 seconds ago   Up 6 seconds   0.0.0.0:8000->5000/tcp, [::]:8000->5000/tcp                                                                                            flask-web-server
+```
+
+We can now access the web server in our web browser at `http://localhost:8000` or with `curl`:
+
+```bash
+curl http://localhost:8000
+```
+```text
+Hello, Docker!
+```
+
+To stop the container, we can use the following command:
+
+```bash
+docker stop flask-web-server
+```
+
+Or remove it completely with:
+
+```bash
+docker rm -f flask-web-server
+```
+
+This is a very basic introduction to Docker and containers. There are many more features and options available, but this should give you a good starting point.
+
+Before moving forward to the Kubernetes topic, we will briefly touch one more concept in Docker - Docker Compose.
+
+Docker compose is a tool for defining and running multi-container Docker applications. With Compose, you use a YAML file to configure your application's services, networks, and volumes. Then, with a single command, you create and start all the services from your configuration. This introduces the concept of declarative configuration, where you don't specify exact steps to achieve a goal, but rather describe the desired state, and the tool figures out how to achieve it.
+
+Let's setup our flask application with docker compose file to demonstrate the tool. First of all we need to create another file: `docker-compose.yaml` (in same directory as `Dockerfile` and python code). 
+
+See: [docker-compose.yaml](./examples/docker_intro/docker-compose.yaml)
+
+```yaml
+services:
+  web:
+    build: . # Builds the image from the Dockerfile in the current directory
+    ports:
+      - "8000:5000" # Maps host port 8000 to container port 5000
+```
+
+This docker compose is very simple, it defines a single service called `web`, which builds the image from the `Dockerfile` in the current directory and maps port 8000 on the host to port 5000 in the container.
+```bash
+docker compose -f examples/docker_intro/docker-compose.yaml up -d
+```
+
+In the command above we use `-f` to point to `docker-compose.yaml` file, `up` to create and start the containers, and `-d` to run them in detached mode.
+
+The end of output should look like this:
+
+```text
+...
+  [+] Running 3/3
+   ✔ docker_intro-web              Built                                                                                                                                                                                                                 0.0s
+   ✔ Network docker_intro_default  Created                                                                                                                                                                                                               0.2s
+   ✔ Container docker_intro-web-1  Started 
+```
+
+Showing us that there was a network created for our application and the container is started.
+
+Again we can check the running containers with `docker ps` and access the web server at `http://localhost:8000`.
+
+Evan though the `docker-compose.yaml` file is very simple, it demonstrates the power of declarative configuration. We can easily add more services, networks, and volumes to our application by simply updating the YAML file and running `docker compose up -d` again.
+
+Declarative configuration brings one other benefit - version control. We can store the `docker-compose.yaml` file in a version control system (e.g., git) and track changes to our application's configuration over time.
+
+If you are interested more in the capabilities of `docker` please refer to the [official documentation](https://docs.docker.com/).
+
 
 ## Why Kubernetes? The Need for Orchestration
 
@@ -25,21 +227,21 @@ TODO
 
 ### Control plane components:
 
-- kube-apiserver
+- `kube-apiserver`
   - exposes the Kubernetes API
   - central point of communication for all components
-- etcd
+- `etcd`
   - distributed key-value store for all cluster data
-- kube-scheduler
+- `kube-scheduler`
   - watches for newly created pods and assigns them to nodes
-- kube-controller-manager
+- `kube-controller-manager`
   - run controller processes that handle routine tasks in the cluster
 
 ### Node components:
 
-- kubelet
+- `kubelet`
   - ensuring that containers are running in a pod according to PodSpec
-- kube-proxy
+- `kube-proxy`
   - maintains network rules on nodes, allowing communication to pods
   - implements part of the Kubernetes Service concept
 - Container runtime (e.g., Docker, containerd)
