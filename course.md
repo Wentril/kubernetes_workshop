@@ -8,7 +8,7 @@ Containers are self-contained, lightweight packages that hold everything an appl
 
 They isolate an application and its dependencies from both the host machine and other containers.
 
-**The Problem Containers Solve** - "It works on my machine!" - Containers ensure that an application runs the same way regardless of where it's deployed, solving issues related to environment differences. (or they should in ideal world)
+**The Problem Containers Solve** - "It works on my machine!" - Containers ensure that an application runs the same way regardless of where it's deployed, solving issues related to environment differences. (at least in an ideal world)
 
 ### Containerization vs Virtualization
 
@@ -34,7 +34,7 @@ Have a look at files in [./examples/docker_intro/](./examples/docker_intro/), th
 - `Dockerfile` - instructions for building the Docker image
 - `docker-compose.yaml` - instructions for running the container with docker-compose
 
-The python part is not very interesting for our demo, and we could achieve the same with other languages, but python is easy to read and understand.
+The Python code is simple, and the same demo could be done in any language — Python is chosen here for readability
 
 If we were running the code directly on our machine, we would first install dependencies from `requirements.txt` and then run `app.py` to start the application. Our web server would be listening on port `5000`.
 
@@ -169,7 +169,7 @@ This is a very basic introduction to Docker and containers. There are many more 
 
 Before moving forward to the Kubernetes topic, we will briefly touch one more concept in Docker - Docker Compose.
 
-Docker compose is a tool for defining and running multi-container Docker applications. With Compose, you use a YAML file to configure your application's services, networks, and volumes. Then, with a single command, you create and start all the services from your configuration. This introduces the concept of declarative configuration, where you don't specify exact steps to achieve a goal, but rather describe the desired state, and the tool figures out how to achieve it.
+Docker compose is a tool for defining and running multi-container Docker applications. With Compose, you use a YAML file to configure your application's services, networks, and volumes. Then, with a single command, you create and start all the services from your configuration. This introduces the concept of declarative configuration (also a fundamental concept of Kubernetes), where you don't specify exact steps to achieve a goal, but rather describe the desired state, and the tool figures out how to achieve it.
 
 Let's setup our flask application with docker compose file to demonstrate the tool. First of all we need to create another file: `docker-compose.yaml` (in same directory as `Dockerfile` and python code). 
 
