@@ -1,7 +1,5 @@
 # NodePort Service Example
 
-TODO
-
 ```yaml
 apiVersion: v1
 kind: Service

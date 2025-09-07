@@ -20,7 +20,7 @@ Events:
     Normal   Pulled          25s                    kubelet            Successfully pulled image "nginx" in 245ms (245ms including waiting). Image size: 192231825 bytes.                                                                                                                                                                              
 ```
 
-Log files then unvail the reason of the failure:
+Log files then unveil the reason of the failure:
 
 ```text
 /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration                                                                                         
@@ -37,7 +37,7 @@ nginx: [warn] the "user" directive makes sense only if the master process runs w
 nginx: [emerg] mkdir() "/var/cache/nginx/client_temp" failed (30: Read-only file system)   
 ```
 
-How to fix it. In general you need to update the pod spec with appropriate volume mounts like this:
+How to fix it. In general, you need to update the pod spec with appropriate volume mounts like this:
 
 ```yaml
 spec:
@@ -56,8 +56,6 @@ spec:
 ```
 
 Unfortunately in our example it is more complicated than that. It is not enough to just mount the `/var/cache/nginx` directory as an `emptyDir` volume. We also need to ensure that the nginx configuration file and other directories are mounted correctly, and that the security context is set to allow nginx to run without root privileges.
-
-TODO: explain why each volume is needed
 
 ```yaml
 apiVersion: v1

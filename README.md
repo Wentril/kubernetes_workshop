@@ -2,6 +2,13 @@
 
 using Kubernetes v1.33.4
 
+## Navigation
+
+- [course.md](course.md) - Main course content
+- [examples/](examples/) - Example configurations and manifests for the main course
+- [additional_resources.md](additional_resources/) - Additional reading and resources
+- [images/](images/) - Diagrams and images used in the course
+
 ## References:
 - https://kubernetes.io/docs/
 - https://minikube.sigs.k8s.io/docs/
@@ -27,23 +34,3 @@ using Kubernetes v1.33.4
 - RBAC (Role-Based Access Control) in Kubernetes
 - Security contexts and pod isolation, pod admission controls
 - Network policies and network security in Kubernetes
-### Monitoring, troubleshooting
-- Monitoring and logging in Kubernetes
-- Tools for troubleshooting and diagnostics
-- Scaling and auto-scaling in Kubernetes
-
-## kubectl
-
-### Install kubectl Linux
-https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
-
-### Install kubectl Mac
-TODO
-
-### Install kubectl Windows
-https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/
-
-- also comes with Docker Desktop
-
-### Architecture
-- https://kubernetes.io/docs/concepts/architecture/

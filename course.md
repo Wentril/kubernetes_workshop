@@ -894,7 +894,7 @@ nginx   1/1     Running   0          42m
 
 ## ReplicaSet - `labels` intermezzo
 
-See: [labels.md](./special_cases/labels.md)
+See: [labels.md](additional_resources/labels.md)
 
 ---
 
@@ -1110,16 +1110,15 @@ See: http://127.0.0.1:8001/api/v1/namespaces/default/services/nginx-clusterip-se
 
 ### NodePort
 
-TODO lets see if it makes sense to use NodePort in the lab environment
-TODO See: [nodeport_service.md](./special_cases/nodeport_service)
+See: [nodeport_service.md](additional_resources/nodeport_service)
 
 ### ExternalName
 
-See: [externalName_service.md](./special_cases/externalname_service.md)
+See: [externalName_service.md](additional_resources/externalname_service.md)
 
 ### LoadBalancer
 
-TODO lets see if it makes sense to use LoadBalancer in the lab environment
+See: [loadbalancer_service.md](additional_resources/loadbalancer_service.md)
 
 ---
 
@@ -1257,7 +1256,7 @@ NOTE: try different ingress rules, hostnames, paths, and path types.
 
 ## Ingress rules, path types, wildcards and other details
 
-See: [ingress_details.md](./special_cases/ingress_details.md) TODO
+See: [ingress_details.md](additional_resources/ingress_details.md)
 
 ---
 
@@ -1292,7 +1291,7 @@ There are different types of Volumes available in Kubernetes, each with its own 
 - `configMap`: A volume that contains configuration data from a ConfigMap. It allows you to inject configuration files into the Pod.
 - `secret`: A volume that contains sensitive data from a Secret. It allows you to inject sensitive data into the Pod without exposing it in the Pod specification.
 
-Plus some honorary mentions of other types of volumes (TODO move to special cases):
+Plus some honorary mentions of other types of volumes (TODO move to `additional_resources`):
 - `emptyDir`: A temporary directory that is created when a Pod is assigned to a Node and exists as long as the Pod is running. It is useful for sharing data between containers in the same Pod.
 - `hostPath`: A directory on the Node's filesystem that is mounted into the Pod. It allows you to access files on the Node's filesystem from within the Pod, which also makes it very dangerous, as it can lead to security issues and data loss if not used carefully.
 - `nfs`: A volume that allows you to mount an NFS share into the Pod. It is useful for sharing data between Pods across different Nodes.
@@ -1364,7 +1363,7 @@ kubectl get storageclass
 ```
 #### Binding
 
-See: [binding.md](./special_cases/persistent_volume_binding.md)
+See: [binding.md](additional_resources/persistent_volume_binding.md)
 
 #### Persistent Volume Reclaim Policy
 
@@ -1576,8 +1575,6 @@ password:  10 bytes
 username:  6 bytes
 ```
 
-TODO at least ServiceAccount, DockerConfig in security section
-
 #### Using Secrets in Pods
 
 Pods can consume Secrets in a similar way as ConfigMaps, such as through environment variables or mounted as files in a volume.
@@ -1628,8 +1625,6 @@ Investigate logs after creating both pods `kubectl logs my-secret-env-pod` and `
 When you need to pull images from a private container registry, you can use `imagePullSecrets` in the Pod specification. This allows Kubernetes to authenticate with the private registry using the credentials stored in a Secret.
 
 See [Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/) for more details.
-
-TODO maybe example
 
 ## Kubernetes namespace and resource isolation
 
@@ -1776,7 +1771,7 @@ error: the namespace from the provided object "my-namespace" does not match the 
 
 ### ResourceQuota and LimitRange intermezzo
 
-See: [ResourceQuota and LimitRange](./special_cases/resource_quotas_and_limit_ranges.md)
+See: [ResourceQuota and LimitRange](additional_resources/resource_quotas_and_limit_ranges.md)
 
 ## Application management with Helm (package manager for Kubernetes)
 
@@ -2467,7 +2462,7 @@ Let's demonstrate this proces for our new user `Bob`. To add a new user to the c
 
 Additional material on authentication in Kubernetes.
 
-See: [Authentication intermezzo](./special_cases/authentication.md)
+See: [Authentication intermezzo](additional_resources/authentication.md)
 
 ## Authorization
 
@@ -2741,7 +2736,7 @@ Note that ClusterRoles can be used in RoleBindings as well, so you can bind a Cl
 
 It is advised to consult the [official documentation](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) for more advanced topics related to RBAC.
 
-TODO See: [RBAC advanced topics](./special_cases/rbac.md)
+TODO See: [RBAC advanced topics](additional_resources/rbac.md)
 
 ## Security contexts and pod isolation, pod admission controls
 
@@ -2945,7 +2940,7 @@ Let's do a demo to enforce the most secure profile, Restricted, and see how it w
     
     The log output suggests problems with `read-only file system`. These problems appear because we have used the restrictive policy which enforces the security context `runAsNonRoot: true` and which implicitly sets `readOnlyRootFilesystem: true`. As a result of that, the Nginx container is not able to create necessary temporary files and directories, leading to permission denied errors.
     
-    How to fix that and make the nginx container work properly while enforcing these constraints? In general, you need to mount specific directories as writable volumes. See the extended example: [read_only_fs.md](./special_cases/read_only_fs.md)
+    How to fix that and make the nginx container work properly while enforcing these constraints? In general, you need to mount specific directories as writable volumes. See the extended example: [read_only_fs.md](additional_resources/read_only_fs.md)
 
 ## Network policies and network security in Kubernetes
 
