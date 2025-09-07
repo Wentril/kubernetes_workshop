@@ -614,11 +614,8 @@ The `ingress-nginx` controller uses the original `Ingress API`, while `ingate` i
 
 ---
 
-TODO probably separate hands-ons from theory
+# Hands-on labs: Creating and managing pods and deployments
 
-## Hands-on labs: Creating and managing pods and deployments
-
----
 
 ## Kubectl
 
@@ -671,10 +668,6 @@ kubectl explain namespace
 kubectl explain pod
 kubectl explain pod.spec
 ```
-
----
-
-# Hands-on labs: Creating and managing pods and deployments
 
 ## General rules 
 
@@ -2187,14 +2180,6 @@ You can see that even with rollback the revision number is increased, and the st
 
 While the rollback is a very powerful command, it has some drawbacks. Similar to rollouts and rollbacks of Deployments, the `helm rollback` command is an imperative one and so it breaks the declarative configuration model of Kubernetes. This means that the state of the cluster after the rollback may not match the state defined in the chart's templates and values files. So it is generally better to use it only in case of emergency and not as a regular way of managing releases. A good example to use it is when a release goes wrong, you can quickly rollback to the last working state to decrease the downtime to minimum. But after that, it is necessary to align your configuration with it.
 
-## Best practices for application management in Kubernetes
-
-TODO extend this section with more details
-
-https://kubernetes.io/docs/setup/best-practices/
-
-Configuration best practices https://kubernetes.io/docs/concepts/configuration/overview/
-
 ---
 # Kubernetes Security
 
@@ -2482,7 +2467,7 @@ There are several authorization modes available in Kubernetes:
 
 Nowadays, the `RBAC` is the de-facto standard and the recommended way to manage authorization in Kubernetes clusters. Because of that, we will focus on it in the next section. The other modes exceed the scope of this course, but you can find more information about them in the Kubernetes [documentation](https://kubernetes.io/docs/reference/access-authn-authz/authorization/#authorization-modules).
 
-TODO maybe have a look at attributes and verbs https://kubernetes.io/docs/reference/access-authn-authz/authorization/#request-attributes-used-in-authorization
+There is description of available `attributes` and `verbs` in the documentation: https://kubernetes.io/docs/reference/access-authn-authz/authorization/#request-attributes-used-in-authorization
 
 #### `kubectl auth can-i` - inspecting authorization rules
 
@@ -3511,3 +3496,44 @@ spec:
 ```
 
 This policy will isolate all pods in the cluster, including system pods in the `kube-system` namespace. This can lead to significant disruptions in cluster operations, as essential services like DNS, networking or API server communication may be blocked.
+
+---
+
+## Best practices for application management in Kubernetes
+
+### Embrace Declarative Configuration
+
+Instead of giving Kubernetes a series of step-by-step commands (imperative approach), you should tell it the desired state of your application in a YAML manifest (declarative approach).
+
+### Design for Immutability and Statelessness
+
+Containers should be treated as disposable, stateless entities. This allows Kubernetes to freely move, scale, and restart them as needed.
+
+### Implement Liveness and Readiness Probes
+
+These probes are crucial for Kubernetes' self-healing and load balancing capabilities.
+
+- Liveness Probe: Tells Kubernetes if your application is still alive. If the probe fails, Kubernetes will restart the container. It's like a heartbeat check.
+- Readiness Probe: Tells Kubernetes if your application is ready to accept traffic. If the probe fails, Kubernetes will remove the container from the load balancer. This prevents traffic from being sent to a container that is still starting up or temporarily unhealthy.
+
+### Some of other Kubernetes Best Practices:
+
+- Use namespaces
+- Use autoscaling
+- Use resource requests and limits
+- Deploy your Pods as part of a Deployment, DaemonSet, ReplicaSet or StatefulSet across nodes (not as standalone Pods)
+- Use multiple nodes
+- Use Role-based access control (RBAC)
+- Upgrade your Kubernetes version
+- Monitor your cluster resources and audit policy logs
+- Avoid sidecar containers for logging
+- Use a version control system
+- Use a Git-based workflow (GitOps)
+- Reduce the size of your containers
+- Organize your objects with labels
+- Use network policies
+
+### Other best prectices reousrces
+- Setup: https://kubernetes.io/docs/setup/best-practices/
+- Configuration: https://kubernetes.io/docs/concepts/configuration/overview/
+- Best practices check list: https://learnkube.com/production-best-practices
