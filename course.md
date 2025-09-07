@@ -1380,10 +1380,6 @@ From Kubernetes 1.33, 23rd April 2025, this is done automatically.
 
 More on that: https://kubernetes.io/blog/2024/08/16/kubernetes-1-31-prevent-persistentvolume-leaks-when-deleting-out-of-order/]
 
-#### StatefulSet
-
-TODO is probably not needed in the basic course, but it is a good idea to mention it here as it is related to Persistent Volumes and PVCs. Separate file maybe
-
 ### ConfigMap
 
 A ConfigMap is a Kubernetes resource that allows you to store configuration data in key-value pairs. It is used to decouple configuration from image content, making applications more portable and easier to manage. It should contain **only non-confidential** data (any type of secret **SHOULD NOT** be there).
@@ -1618,6 +1614,16 @@ Investigate logs after creating both pods `kubectl logs my-secret-env-pod` and `
 When you need to pull images from a private container registry, you can use `imagePullSecrets` in the Pod specification. This allows Kubernetes to authenticate with the private registry using the credentials stored in a Secret.
 
 See [Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/) for more details.
+
+## Other advanced resources and concepts
+
+- StatefulSet - for managing stateful applications
+  - see: [statefulset.md](additional_resources/statefulset.md) 
+- DaemonSet - for running a copy of a Pod on all or some nodes
+  - see: [daemonset.md](additional_resources/daemonset.md)
+- Node Assignments - taints and tolerations, node selectors, node affinity
+  - see: [node_assignments.md](additional_resources/node_assignment.md)
+
 
 ## Kubernetes namespace and resource isolation
 
@@ -2721,7 +2727,7 @@ Note that ClusterRoles can be used in RoleBindings as well, so you can bind a Cl
 
 It is advised to consult the [official documentation](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) for more advanced topics related to RBAC.
 
-TODO See: [RBAC advanced topics](additional_resources/rbac.md)
+See: [RBAC advanced topics](additional_resources/rbac.md)
 
 ## Security contexts and pod isolation, pod admission controls
 

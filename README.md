@@ -25,6 +25,7 @@ using Kubernetes v1.33.4
 - Hands-on labs: Creating and managing pods and deployments
 ### Kubernetes resources and application management
 - Advanced Resources: ConfigMaps, Secrets, Persistent Volumes
+- Other advanced resources and concepts
 - Kubernetes namespace and resource isolation
 - Application management with Helm (package manager for Kubernetes)
 - Best practices for application management in Kubernetes
