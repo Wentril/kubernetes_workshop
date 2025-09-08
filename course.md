@@ -1243,7 +1243,24 @@ Events:
   Normal  Sync    17s   nginx-ingress-controller  Scheduled for sync
 ```
 
-Visit: http://localhost/ (localhost works when docker desktop kubernetes is used)
+To access the ingress, you need to add an entry to your `/etc/hosts` file (or equivalent on Windows) to map the hostname `nginx.example.com` to the IP address of the ingress controller.
+
+First of all, we need to get the ip address of minikube cluster:
+
+```bash
+minikube ip
+```
+
+```text
+192.168.49.2  # example output, it can be different in your setup
+```
+
+Then add the following line to your `/etc/hosts` file (use `sudo nano /etc/hosts`):
+```text
+192.168.49.2 nginx.example.com
+```
+
+For kubernetes on docker desktop you can also visit: http://localhost/
 
 NOTE: try different ingress rules, hostnames, paths, and path types.
 
