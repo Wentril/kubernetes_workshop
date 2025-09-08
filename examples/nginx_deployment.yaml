@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx # Name of your Deployment
+  labels:
+    app: nginx-web # Labels for the Deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-web  # Selector for Pods managed by the ReplicaSet created by this Deployment
+  template: # This describes the Pods that the Deployment will create
+    metadata:
+      labels:
+        app: nginx-web # Labels for the Pods (must match selector!)
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.29.0

@@ -1,0 +1,5 @@
+services:
+  web:
+    build: . # Builds the image from the Dockerfile in the current directory
+    ports:
+      - "8000:5000" # Maps host port 8080 to container port 5000

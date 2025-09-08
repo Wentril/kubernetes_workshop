@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-restricted
+  namespace: restricted-ns # Specify the namespace here
+spec:
+  securityContext:  # Pod-level security context
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: nginx
+      image: nginx:1.29.0
+      securityContext:  # Container-level security context
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL

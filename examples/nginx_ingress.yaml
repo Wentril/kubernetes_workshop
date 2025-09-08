@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: / # Rewrites the request path to '/'
+spec:
+  ingressClassName: nginx # Important: Specifies which Ingress Controller handles this Ingress
+  rules:
+  - http:
+      paths:
+      - path: / # Route traffic for the root path
+        pathType: Prefix # Matches any path starting with '/'
+        backend:
+          service:
+            name: nginx-clusterip-service # The name of your ClusterIP Service
+            port:
+              number: 80 # The port of that Service
+    # Uncomment the following lines if you want to use specific hostname
+    # TODO change for your environment
+    host: nginx.example.com # The hostname you'll use to access the service

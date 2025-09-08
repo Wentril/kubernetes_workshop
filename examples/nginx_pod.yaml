@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+    - name: nginx # Name of the container within the Pod
+      image: nginx:1.29.0 # Docker image to use
