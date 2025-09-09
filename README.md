@@ -20,7 +20,7 @@ using Kubernetes v1.33.4
 - Introduction/Summary of Container Technologies (Docker), Basics
 - Why Kubernetes? The Need for Orchestration
 - Kubernetes architecture: master and node components
-- Installation of Kubernetes (e.g. with Minikube or kubeadm) Ideally, a lab environment provided by the training provider.
+- Installation of Kubernetes (e.g. with Minikube or kubeadm)
 - Get started with Kubernetes: pods, deployments, services
 - Hands-on labs: Creating and managing pods and deployments
 ### Kubernetes resources and application management

@@ -299,7 +299,7 @@ But it is important to remember that Kubernetes is a tool, you should always eva
   - it interacts with the container runtime to start, stop, and manage containers
   - it reports the status of the pods back to the API server
 
-## Installation of Kubernetes (e.g. with Minikube or kubeadm). Ideally, a lab environment provided by the training provider.
+## Installation of Kubernetes (e.g. with Minikube or kubeadm)
 
 To work with Kubernetes on your local machine, you'll need more than a single command. The setup involves two main parts: first you need a local Kubernetes cluster (`Minikube`), and second, you need the tools to interact with it (`kubectl`).
 
