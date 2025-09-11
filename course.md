@@ -1453,7 +1453,7 @@ In pod specification, you can reference the ConfigMap in several ways:
 
   ```yaml
   #spec.containers[].volumeMounts:
-  - name: foo  # Name of the volume to mount
+  - name: config-volume  # Name of the volume to mount
     mountPath: /etc/config  # Path inside the container where the ConfigMap will be mounted
     readOnly: true  # Optional, but recommended to prevent accidental changes
   
