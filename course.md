@@ -1446,7 +1446,7 @@ In pod specification, you can reference the ConfigMap in several ways:
   #spec.containers[].envFrom:
   envFrom:
     - configMapRef:
-        name: myconfigmap 
+        name: example-config 
   ```
 - as a files with volume mounted into the Pod:
   - uses `volumes` and `volumeMounts` blocks to mount the ConfigMap as a file system volume:
