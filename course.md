@@ -3291,7 +3291,7 @@ Let's do a demo to illustrate how network policies work in practice. We will cre
 
     To allow the communication between the pods, we need to create two new network policies: one in `ns-a` to allow egress traffic to `ns-b`, and another in `ns-b` to allow ingress traffic from `ns-a`. 
     
-    Apply the manifest[allow_policies.yaml](./examples/network_policy/allow_policies.yaml):  
+    Apply the manifest [allow_policies.yaml](./examples/network_policy/allow_policies.yaml):  
 
     ```yaml
     apiVersion: networking.k8s.io/v1
