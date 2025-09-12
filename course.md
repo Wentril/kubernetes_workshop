@@ -2673,7 +2673,7 @@ rules:
   verbs: ["get", "list", "watch"]
 ```
 ```bash
-kubectl apply -f cluster-reader-role.yaml
+kubectl apply -f examples/rbac/cluster_role.yaml
 ```
 
 Apply the ClusterRoleBinding:
@@ -2693,7 +2693,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 ```bash
-kubectl apply -f cluster-reader-role.yaml
+kubectl apply -f examples/rbac/cluster_role_binding.yaml
 ```
 
 Test the permissions for `Bob` user:
