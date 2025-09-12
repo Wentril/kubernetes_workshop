@@ -2341,7 +2341,7 @@ Let's demonstrate this proces for our new user `Bob`. To add a new user to the c
       signerName: kubernetes.io/kube-apiserver-client
       usages:
       - client auth
-    EOF 
+    EOF
     ```
 
 3. **Approve the CSR and Retrieve the Certificate**
