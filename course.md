@@ -1446,14 +1446,14 @@ In pod specification, you can reference the ConfigMap in several ways:
   #spec.containers[].envFrom:
   envFrom:
     - configMapRef:
-        name: myconfigmap 
+        name: example-config 
   ```
 - as a files with volume mounted into the Pod:
   - uses `volumes` and `volumeMounts` blocks to mount the ConfigMap as a file system volume:
 
   ```yaml
   #spec.containers[].volumeMounts:
-  - name: foo  # Name of the volume to mount
+  - name: config-volume  # Name of the volume to mount
     mountPath: /etc/config  # Path inside the container where the ConfigMap will be mounted
     readOnly: true  # Optional, but recommended to prevent accidental changes
   
@@ -2341,7 +2341,7 @@ Let's demonstrate this proces for our new user `Bob`. To add a new user to the c
       signerName: kubernetes.io/kube-apiserver-client
       usages:
       - client auth
-    EOF 
+    EOF
     ```
 
 3. **Approve the CSR and Retrieve the Certificate**
@@ -2673,7 +2673,7 @@ rules:
   verbs: ["get", "list", "watch"]
 ```
 ```bash
-kubectl apply -f cluster-reader-role.yaml
+kubectl apply -f examples/rbac/cluster_role.yaml
 ```
 
 Apply the ClusterRoleBinding:
@@ -2693,7 +2693,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 ```bash
-kubectl apply -f cluster-reader-role.yaml
+kubectl apply -f examples/rbac/cluster_role_binding.yaml
 ```
 
 Test the permissions for `Bob` user:
@@ -3291,7 +3291,7 @@ Let's do a demo to illustrate how network policies work in practice. We will cre
 
     To allow the communication between the pods, we need to create two new network policies: one in `ns-a` to allow egress traffic to `ns-b`, and another in `ns-b` to allow ingress traffic from `ns-a`. 
     
-    Apply the manifest[allow_policies.yaml](./examples/network_policy/allow_policies.yaml):  
+    Apply the manifest [allow_policies.yaml](./examples/network_policy/allow_policies.yaml):  
 
     ```yaml
     apiVersion: networking.k8s.io/v1
