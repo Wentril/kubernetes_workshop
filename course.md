@@ -2226,7 +2226,7 @@ The most important aspects of Kubernetes security include:
 
 One of the most important aspects of Kubernetes security is the ability to control access to the Kubernetes API, as it is the central point of interaction with the cluster.
 
-The request to the APi server coming either from human user or Kubernetes ServiceAccount (e.g., from a Pod) goes through three stages:
+The request to the API server coming either from human user or Kubernetes ServiceAccount (e.g., from a Pod) goes through three stages:
 1. **[Authentication](#authentication)**: The API server verifies the identity of the user or application making the request. This can be done using various methods, such as client certificates, bearer tokens, or external authentication providers (e.g., OpenID Connect).
 2. **[Authorization](#Authorization)**: After authentication, the API server checks if the user or application has the necessary permissions to perform the requested action. This is done using Role-Based Access Control (RBAC) or other authorization mechanisms.
    - [RBAC](#RBAC-Role-Based-Access-Control-in-Kubernetes) is the most commonly used authorization mechanism in Kubernetes.
@@ -2312,7 +2312,7 @@ users:
 
 As was already stated, Kubernetes by itself does not provide a built-in authentication mechanism, but it supports various authentication methods. One of these methods is using client certificates. This method is commonly used for users who need to access the Kubernetes API directly, such as administrators or developers.
 
-Let's demonstrate this proces for our new user `Bob`. To add a new user to the cluster using client certificates, we need to follow these steps:
+Let's demonstrate this process for our new user `Bob`. To add a new user to the cluster using client certificates, we need to follow these steps:
 
 1. **Generate Private Key and Certificate Signing Request (CSR)**
 
@@ -2435,7 +2435,7 @@ Let's demonstrate this proces for our new user `Bob`. To add a new user to the c
     ```
     This error indicates that Bob is authenticated, but does not have the necessary permissions to list Pods in the default namespace.
     
-    Now let's compare this to another user, `Alice`, who has been set up selfsigned certificates and thus should not be authenticated by the API server. 
+    Now let's compare this to another user, `Alice`, who has been set up self-signed certificates and thus should not be authenticated by the API server. 
     
     ```bash
     openssl genrsa -out alice.key 2048
@@ -2476,7 +2476,7 @@ See: [Authentication intermezzo](additional_resources/authentication.md)
 
 Documentation: https://kubernetes.io/docs/reference/access-authn-authz/authorization/
 
-Once a user or application is authenticated (except `anonymous requests`), Kubernetes needs to determine whether they have the necessary permissions to perform the requested action. This is where authorization comes into play. You can see it as a second stap in the [schema](#authentication-and-authorization-with-kubernetes) provided above at the beginning of this section.
+Once a user or application is authenticated (except `anonymous requests`), Kubernetes needs to determine whether they have the necessary permissions to perform the requested action. This is where authorization comes into play. You can see it as a second step in the [schema](#authentication-and-authorization-with-kubernetes) provided above at the beginning of this section.
 
 The authorization process takes place within the API server, which checks request attributes against all policies and might also consult other external services. Based on the result, it allows or denies the request. Access denied by default policy is in place for all the resources, meaning that unless explicitly allowed, users and applications cannot perform any actions on the cluster resources.
 
@@ -3354,7 +3354,7 @@ Let's do a demo to illustrate how network policies work in practice. We will cre
 
 6. **Understanding the Issue**: Access to DNS is blocked.
 
-    The issue comes from the fact, that once any policy is applied to a pod, it will switch fom `default allow` policy to `default deny unless specifically allowed`. As a result of that, the pod loses access to essential cluster services like DNS.
+    The issue comes from the fact, that once any policy is applied to a pod, it will switch from `default allow` policy to `default deny unless specifically allowed`. As a result of that, the pod loses access to essential cluster services like DNS.
 
     You can try to access the pod directly by its IP address or the IP address of its service, but that is not a good practice as the IP address can change.
     
@@ -3556,7 +3556,7 @@ These probes are crucial for Kubernetes' self-healing and load balancing capabil
 - Organize your objects with labels
 - Use network policies
 
-### Other best prectices reousrces
+### Other best practice resources
 - Setup: https://kubernetes.io/docs/setup/best-practices/
 - Configuration: https://kubernetes.io/docs/concepts/configuration/overview/
 - Best practices check list: https://learnkube.com/production-best-practices
