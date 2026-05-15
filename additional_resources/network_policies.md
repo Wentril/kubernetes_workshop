@@ -37,3 +37,5 @@ spec:
             matchLabels:
               kubernetes.io/metadata.name: namespace1
 ```
+
+[Visual network policy editor - editor.networkpolicy.io](https://editor.networkpolicy.io)
