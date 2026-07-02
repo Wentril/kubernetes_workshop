@@ -24,6 +24,30 @@ parameters:
   disk-encryption-kms-key: <cmek-location> # projects/<cmek-project-id>/locations/europe-west3/keyRings/<cmek-keyring-name>/cryptoKeys/<cmek-key-name>
 ```
 
+or from GKE 1.35.3-gke.1290000  
+```yaml title="storage_balanced.yaml"
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: balanced
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: pd.csi.storage.gke.io
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+parameters:
+  type: dynamic
+  pd-type: pd-balanced
+  hyperdisk-type: hyperdisk-balanced
+  use-allowed-disk-topology: "true"
+  # The parameters below only apply to the hyperdisk-type and are ignored if
+  # the pd-type is selected.
+  provisioned-throughput-on-create: "250Mi"
+  provisioned-iops-on-create: "3000"
+  disk-encryption-kms-key: <cmek-location> # projects/<cmek-project-id>/locations/europe-west3/keyRings/<cmek-keyring-name>/cryptoKeys/<cmek-key-name>
+```
+  
 ## IP Masqarade
 ```yaml title="ip_masq_agent.yaml"
 apiVersion: v1
