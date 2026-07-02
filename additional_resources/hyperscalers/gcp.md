@@ -24,7 +24,7 @@ parameters:
   disk-encryption-kms-key: <cmek-location> # projects/<cmek-project-id>/locations/europe-west3/keyRings/<cmek-keyring-name>/cryptoKeys/<cmek-key-name>
 ```
 
-or from GKE 1.35.3-gke.1290000  
+or from GKE `1.35.3-gke.1290000`  
 ```yaml title="storage_balanced.yaml"
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
