@@ -39,13 +39,6 @@ data:
     #  - 172.16.0.0/12
     #  - 192.168.0.0/16
     #  - 100.64.0.0/10
-      - 192.0.0.0/24
-      - 192.0.2.0/24
-      - 192.88.99.0/24
-      - 198.18.0.0/15
-      - 198.51.100.0/24
-      - 203.0.113.0/24
-      - 240.0.0.0/4
       - 100.96.0.0/12 # Contains Pods and Services IP ranges that should never be masquaraded. It also contains master nodes and clusterIPs
       # https://cloud.google.com/kubernetes-engine/docs/how-to/ip-masquerade-agent#edit-ip-masq-agent-configmap
     # Subnets used on the SharedVPC IPs in GCP shall be placed here as well!!!!!
