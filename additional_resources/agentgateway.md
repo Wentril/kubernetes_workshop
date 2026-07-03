@@ -102,7 +102,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: <app>
-  annotations:
+  labels:
     gateway.networking.k8s.io/allowed-listener-creation: "true"
 ```
 ```yaml
