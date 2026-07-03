@@ -73,3 +73,8 @@ Feature support is controller-dependent. Not every controller supports every rou
 
 - Official implementation list: [gateway-api.sigs.k8s.io](https://gateway-api.sigs.k8s.io/docs/implementations/list/)
 - Before choosing a controller, check support for the exact resources and features you plan to teach or use
+
+**Important note:**  
+As of Gateway API `v1.6.0` resources are still being propagated to GA (from e.g.`v1alpha2` to `v1`) without remaining in the `alpha` channels, which causes updates NOT to be backwards compatibile.  
+  
+If Gateway API implementation uses `tlsroutes.gateway.networking.k8s.io/v1alpha2` and this resources is promoted to `tlsroutes.gateway.networking.k8s.io/v1` without being kept in `tlsroutes.gateway.networking.k8s.io/v1alpha2`, then the `tlsroutes.gateway.networking.k8s.io/v1alpha2` is undefined and causes `Undefined resource` or similar error.  
