@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-affinity
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: nginx-affinity
+  template:
+    metadata:
+      labels:
+        app: nginx-affinity
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 80
+            preference:
+              matchExpressions:
+              - key: role
+                operator: In
+                values:
+                - frontend
+          - weight: 20
+            preference:
+              matchExpressions:
+              - key: role
+                operator: In
+                values:
+                - general
+      containers:
+      - name: nginx
+        image: nginx:1.29.0
