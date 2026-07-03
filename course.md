@@ -3542,8 +3542,11 @@ Containers should be treated as disposable, stateless entities. This allows Kube
 
 These probes are crucial for Kubernetes' self-healing and load balancing capabilities.
 
-- Liveness Probe: Tells Kubernetes if your application is still alive. If the probe fails, Kubernetes will restart the container. It's like a heartbeat check.
-- Readiness Probe: Tells Kubernetes if your application is ready to accept traffic. If the probe fails, Kubernetes will remove the container from the load balancer. This prevents traffic from being sent to a container that is still starting up or temporarily unhealthy.
+- **Liveness Probe**: Tells Kubernetes if your application is still alive. If the probe fails, Kubernetes will restart the container. It's like a heartbeat check.
+- **Readiness Probe**: Tells Kubernetes if your application is ready to accept traffic. If the probe fails, Kubernetes will remove the container from the load balancer. This prevents traffic from being sent to a container that is still starting up or temporarily unhealthy.
+- **Startup Probe**: Gives slow-starting containers a separate, larger window to initialize before liveness and readiness probes take over.
+
+See: [probes.md](additional_resources/probes.md)
 
 ### Some of other Kubernetes Best Practices:
 

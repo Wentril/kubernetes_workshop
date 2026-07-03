@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: startup-probe
+spec:
+  containers:
+  - name: app
+    image: busybox:1.28
+    # Simulates a slow-starting application: waits 20 seconds before creating the ready file
+    command: ["sh", "-c", "sleep 20 && touch /tmp/ready && sleep 600"]
+    startupProbe:
+      exec:
+        command:
+        - cat
+        - /tmp/ready
+      failureThreshold: 30   # 30 * periodSeconds(10) = 5 minutes max startup window
+      periodSeconds: 10
+    livenessProbe:
+      exec:
+        command:
+        - cat
+        - /tmp/ready
+      periodSeconds: 10
+      failureThreshold: 3
