@@ -1159,7 +1159,7 @@ See: http://127.0.0.1:8001/api/v1/namespaces/default/services/nginx-clusterip-se
 
 #### NodePort
 
-See: [nodeport_service.md](additional_resources/nodeport_service)
+See: [nodeport_service.md](additional_resources/nodeport_service.md)
 
 #### ExternalName
 
@@ -1410,7 +1410,7 @@ There are different types of Volumes available in Kubernetes, each with its own 
 - `configMap`: A volume that contains configuration data from a ConfigMap. It allows you to inject configuration files into the Pod.
 - `secret`: A volume that contains sensitive data from a Secret. It allows you to inject sensitive data into the Pod without exposing it in the Pod specification.
 
-Plus some honorary mentions of other types of volumes (TODO move to `additional_resources`):
+Other volume types worth knowing:
 - `emptyDir`: A temporary directory that is created when a Pod is assigned to a Node and exists as long as the Pod is running. It is useful for sharing data between containers in the same Pod.
 - `hostPath`: A directory on the Node's filesystem that is mounted into the Pod. It allows you to access files on the Node's filesystem from within the Pod, which also makes it very dangerous, as it can lead to security issues and data loss if not used carefully.
 - `nfs`: A volume that allows you to mount an NFS share into the Pod. It is useful for sharing data between Pods across different Nodes.
@@ -1744,11 +1744,13 @@ See [Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-co
 ## Other advanced resources and concepts
 
 - StatefulSet - for managing stateful applications
-  - see: [statefulset.md](additional_resources/statefulset.md) 
+  - see: [statefulset.md](additional_resources/statefulset.md)
 - DaemonSet - for running a copy of a Pod on all or some nodes
   - see: [daemonset.md](additional_resources/daemonset.md)
 - Node Assignments - taints and tolerations, node selectors, node affinity
-  - see: [node_assignments.md](additional_resources/node_assignment.md)
+  - see: [node_assignment.md](additional_resources/node_assignment.md)
+- Liveness, Readiness and Startup Probes - health checks for containers
+  - see: [probes.md](additional_resources/probes.md)
 
 
 ## Kubernetes namespace and resource isolation
@@ -2562,7 +2564,7 @@ Let's demonstrate this process for our new user `Bob`. To add a new user to the 
     
     But this time it is because Alice's certificate is not recognized by the API server, so she is not authenticated at all. Don't get confused by `Unauthorized` error, it is not the same as `Forbidden` error. The `Unauthorized` error means that the user is not authenticated, while the `Forbidden` error means that the user is authenticated but does not have the necessary permissions to perform the action.
     
-    Another point of confusion could arise if we would try to impersonate both `Bob` and `Alice` users using the `--as` flag in the `kubectl` command while using `minikube context.
+    Another point of confusion could arise if we would try to impersonate both `Bob` and `Alice` users using the `--as` flag in the `kubectl` command while using `minikube` context.
     
     ```bash
     kubectl config use-context minikube
