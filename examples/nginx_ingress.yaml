@@ -16,6 +16,6 @@ spec:
             name: nginx-clusterip-service # The name of your ClusterIP Service
             port:
               number: 80 # The port of that Service
-    # Uncomment the following lines if you want to use specific hostname
-    # TODO change for your environment
+    # Replace nginx.example.com with your desired hostname.
+    # Add a corresponding entry to /etc/hosts (e.g. "127.0.0.1 nginx.example.com") for local testing.
     host: nginx.example.com # The hostname you'll use to access the service

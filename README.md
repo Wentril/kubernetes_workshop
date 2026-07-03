@@ -6,7 +6,7 @@ using Kubernetes v1.33.4
 
 - [course.md](course.md) - Main course content
 - [examples/](examples/) - Example configurations and manifests for the main course
-- [additional_resources.md](additional_resources/) - Additional reading and resources
+- [additional_resources/](additional_resources/) - Additional reading and resources
 - [images/](images/) - Diagrams and images used in the course
 
 ## References:

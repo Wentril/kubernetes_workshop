@@ -49,7 +49,7 @@ nslookup my-external-service
 Server:         10.96.0.10
 Address:        10.96.0.10#53
 
-my-google-service.default.svc.cluster.local     canonical name = httpbin.org.
+my-external-service.default.svc.cluster.local     canonical name = httpbin.org.
 Name:   httpbin.org
 Address: 54.158.253.62
 Name:   httpbin.org

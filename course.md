@@ -204,7 +204,7 @@ Showing us that there was a network created for our application and the containe
 
 Again we can check the running containers with `docker ps` and access the web server at `http://localhost:8000`.
 
-Evan though the `docker-compose.yaml` file is very simple, it demonstrates the power of declarative configuration. We can easily add more services, networks, and volumes to our application by simply updating the YAML file and running `docker compose up -d` again.
+Even though the `docker-compose.yaml` file is very simple, it demonstrates the power of declarative configuration. We can easily add more services, networks, and volumes to our application by simply updating the YAML file and running `docker compose up -d` again.
 
 Declarative configuration brings one other benefit - version control. We can store the `docker-compose.yaml` file in a version control system (e.g., git) and track changes to our application's configuration over time.
 
@@ -446,178 +446,9 @@ chmod 700 get_helm.sh
 
 We will use helm later in the course.
 
-## Get started with Kubernetes: pods, deployments, services
-
-### Pod
-Core Concept:
-
-- A Pod is the smallest deployable unit in Kubernetes.
-- It contains one or more containers (usually one primary, others are "sidecars").
-
-Pods are ephemeral and disposable: they get new IPs if they restart or are re-scheduled. This is a problem Services will solve.
-
-Shared resources: Containers in a Pod share network namespace and volumes.
-
-Usually, Pods are not created directly, but via Deployments.
-
-Pod is meant to run a single instance of an application. In the case of scaling, multiple Pods are created. (Replication)
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx-pod
-spec:
-  containers:
-    - name: nginx
-      image: nginx
-```
-
-### ReplicaSet
-
-A ReplicaSet ensures that a specified number of pod replicas are running at any given time.
-
-A ReplicaSet is a higher-level abstraction that manages Pods, ensuring that the desired number of replicas are running.
-
-If a Pod fails, the ReplicaSet will automatically create a new one to maintain the desired count (this is its self-healing capability).
-
-While a ReplicaSet handles replication and self-healing, it does not provide advanced deployment features like rolling updates or rollbacks. That's why Deployments are built on top of ReplicaSets.
-
-### Deployment
-A Deployment manages a set of Pods to run an application workload, usually one that doesn't maintain state.
-
-A Deployment is a higher-level abstraction that manages Pods and ReplicaSets. Hierarchy: `Deployment > ReplicaSet > Pods`
-
-Describe the desired state (e.g., number of replicas, container images, etc.) and the Deployment controller will ensure that the current state matches the desired state.
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-  labels:
-    app: nginx-web
-spec:  # ~ ReplicaSet spec
-  replicas: 3
-  selector:
-    matchLabels:
-      app: nginx-web
-  template:  # PodTemplateSpec
-    metadata:
-      labels:
-        app: nginx-web
-    spec:  # Pod spec
-      containers:
-      - name: nginx
-        image: nginx
-        ports:
-        - containerPort: 80
-```
-
-### Service
-
-Exposes an application behind a single outward-facing endpoint, even when the workload is split across multiple backends.
-
-A Service provides a stable IP address and DNS name for a set of Pods, allowing them to be accessed consistently. A Service uses labels and selectors to select which Pods it will route traffic to.
-
-A Service can load balance traffic to multiple Pods, ensuring that the application is highly available and scalable.
-
-If you use a Deployment to run your app, that Deployment can create and destroy Pods dynamically. Because of that, you don't know the IP addresses of the Pods in advance. A Service provides a stable endpoint to access those Pods.
-
-Imagine a situation where you have two sets of pods representing backend and frontend of your application. As pods are ephemeral, you need a way to access the backend pods from the frontend pods without knowing and managing their IP addresses. For that, you can use a Service. which will serve as a single point of access to the backend pods.
-
-Service Types (How you expose your application):
-- ClusterIP: The default. Exposes the Service on an internal IP address. Only accessible from within the cluster.
-  - headless service if `.spec.clusterIP: "None"` 
-- NodePort: Exposes the Service on a static port on each Node's IP. Accessible from outside the cluster.
-- LoadBalancer: Exposes the Service externally using a cloud provider's load balancer.
-- ExternalName: Maps the Service to a DNS name, allowing you to access an external service by name.
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-clusterip-service # Name of your Service
-  labels:
-    app: nginx-web # Label for the Service itself
-spec:
-  selector:
-    app: nginx-web # CRITICAL: This matches the 'app: nginx-web' label on your Pods
-  ports:
-    - protocol: TCP
-      port: 80 # The port this Service itself will listen on
-      targetPort: 80 # The port your container (Nginx) is listening on inside the Pod
-  type: ClusterIP # Explicitly setting ClusterIP, though it's the default
-```
-
-#### Network model
-
-- every pod gets its own cluster-wide IP address
-- pod (cluster) network handles communication between pods
-- the service API provides a stable long-lived IP address and hostname for a service implemented in the pod
-  - k8s manages EndpointSlice objects to provide  
-- Gateways and Ingresses provide external access to services
-- Network policies can be used to control traffic between pods and between pods and external world
-
-### Ingress
-
-An API object that manages external access to the services in a cluster, typically HTTP.
-
-An Ingress allows you to define rules for routing external HTTP/S traffic to specific services based on the request's host and path.
-
-In the image, there is an example of Ingress that routes traffic to one Service.
-
-![img.png](images/ingress.png)
-
-Additionally, ingress can be configured to give Services externally-reachable URLs, provide SSL termination, load balancing, and other features.
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: nginx-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: / # Rewrites the request path to '/'
-spec:
-  ingressClassName: nginx # Important: Specifies which Ingress Controller handles this Ingress
-  rules:
-  - http:
-      paths:
-      - path: / # Route traffic for the root path
-        pathType: Prefix # Matches any path starting with '/'
-        backend:
-          service:
-            name: nginx-clusterip-service # The name of your ClusterIP Service
-            port:
-              number: 80 # The port of that Service
-    host: nginx.example.com # The hostname you'll use to access the service
-```
-
-#### Ingress Controller
-
-In order to make Ingress work, you need to have an Ingress Controller running in your cluster. The Ingress Controller is responsible for fulfilling the Ingress rules and routing the traffic to the appropriate Services.
-
-Ingress Controllers are not part of the Kubernetes core, but are implemented as separate components. Ingress Controllers can be implemented using various technologies, such as NGINX, Traefik, HAProxy, or cloud provider-specific solutions.
-
-Kubernetes as a project supports and maintains AWS, GCE, and [nginx](https://github.com/kubernetes/ingress-nginx) ingress controllers.
-
-[ingress-nginx](https://github.com/kubernetes/ingress-nginx) project is being [discontinued](https://github.com/kubernetes/ingress-nginx/issues/13002) in favor of [ingate](https://github.com/kubernetes-sigs/ingate) project.
-
-
-
-#### Gateway API
-
-It is designed to be a more flexible and extensible successor to the original `Ingress API`, providing advanced traffic management, better CRD extensibility, and improved support for modern networking use cases.
-`Gateway API` is still evolving and is not yet as widely adopted as `Ingress`, but it is intended to become the standard for service networking in Kubernetes.
-
-The `ingress-nginx` controller uses the original `Ingress API`, while `ingate` is designed to support the newer `Gateway API` in Kubernetes.
-
 ---
 
-# Hands-on labs: Creating and managing pods and deployments
-
-
-## Kubectl
+# `kubectl`
 
 Kubectl is the command-line tool for interacting with Kubernetes clusters.
 
@@ -669,14 +500,44 @@ kubectl explain pod
 kubectl explain pod.spec
 ```
 
-## General rules 
+---
+
+# General rules 
 
 ### Names
 
 Kubernetes **names** must only contain lowercase alphanumeric characters and -.
 For example, the names 123-abc and web are valid, but 123_abc and -web are not.
 
-# Pods
+---
+
+# Pod
+
+Core Concept:
+
+- A Pod is the smallest deployable unit in Kubernetes.
+- It contains one or more containers (usually one primary, others are "sidecars").
+
+Pods are ephemeral and disposable: they get new IPs if they restart or are re-scheduled. This is a problem Services will solve.
+
+Shared resources: Containers in a Pod share network namespace and volumes.
+
+Usually, Pods are not created directly, but via Deployments.
+
+Pod is meant to run a single instance of an application. In the case of scaling, multiple Pods are created. (Replication)
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+```
+
+## Hands-on
 
 Simple examples of a Pod: [nginx_pod.yaml](./examples/nginx_pod.yaml) and [redis_pod.yaml](./examples/redis_pod.yaml)
 
@@ -699,7 +560,7 @@ kubectl get pod/nginx
 kubectl get -f examples/nginx_pod.yaml 
 ```
 
-## Accessing the pod
+### Accessing the pod
 
 ```bash
 kubectl proxy
@@ -719,21 +580,21 @@ kubectl port-forward pod/redis 6379:6379
 redis-cli ping
 ```
 
-## `describe` - inspect a pod
+### `describe` - inspect a pod
 
 ```bash
 kubectl describe pod nginx
 kubectl describe pod redis
 ```
 
-## `exec` - connect (ssh) to a pod
+### `exec` - connect (ssh) to a pod
 
 ```bash
 kubectl exec -it nginx -- /bin/bash
 kubectl exec -it redis -- redis-cli  # ping
 ```
 
-## `logs` - inspect logs of a pod
+### `logs` - inspect logs of a pod
 
 ```bash
 kubectl logs nginx
@@ -741,7 +602,7 @@ kubectl logs pod/nginx
 kubectl logs nginx -f  # --follow=false
 ```
 
-## `delete` - delete a pod
+### `delete` - delete a pod
 
 ```bash
 kubectl delete pod redis  # or -f examples/redis_pod.yaml
@@ -750,6 +611,16 @@ kubectl delete pod redis  # or -f examples/redis_pod.yaml
 ---
 
 # ReplicaSet
+
+A ReplicaSet ensures that a specified number of pod replicas are running at any given time.
+
+A ReplicaSet is a higher-level abstraction that manages Pods, ensuring that the desired number of replicas are running.
+
+If a Pod fails, the ReplicaSet will automatically create a new one to maintain the desired count (this is its self-healing capability).
+
+While a ReplicaSet handles replication and self-healing, it does not provide advanced deployment features like rolling updates or rollbacks. That's why Deployments are built on top of ReplicaSets.
+
+## Hands-on
 
 Simple example of a ReplicaSet: [nginx_replicaset.yaml](./examples/nginx_replicaset.yaml)
 
@@ -779,9 +650,9 @@ pod/nginx-c6dc9   1/1     Running            0          17m
 pod/nginx-gr7tb   1/1     Running            0          17m
 ```
 
-## Replication in action
+### Replication in action
 
-### Maintaining desired state
+#### Maintaining desired state
 
 Try deleting one of the pods and see how ReplicaSet creates a new one to maintain the desired state.
 
@@ -813,7 +684,7 @@ pod/nginx-c6dc9   1/1     Running            0          17m
 pod/nginx-gr7tb   1/1     Running            0          17m
 ```
 
-### Updating desired state
+#### Updating desired state
 
 Update the ReplicaSet to change the number of replicas:
 
@@ -872,7 +743,7 @@ nginx-sgx4j   1/1     Running   0          77s
 nginx-zg2xw   1/1     Running   0          77s
 ```
 
-### Cleaning up
+#### Cleaning up
 
 ```bash
 kubectl delete replicaset/nginx
@@ -885,13 +756,44 @@ NAME    READY   STATUS    RESTARTS   AGE
 nginx   1/1     Running   0          42m
 ```
 
-## ReplicaSet - `labels` intermezzo
+### ReplicaSet - `labels` intermezzo
 
 See: [labels.md](additional_resources/labels.md)
 
 ---
 
 # Deployment
+A Deployment manages a set of Pods to run an application workload, usually one that doesn't maintain state.
+
+A Deployment is a higher-level abstraction that manages Pods and ReplicaSets. Hierarchy: `Deployment > ReplicaSet > Pods`
+
+Describe the desired state (e.g., number of replicas, container images, etc.) and the Deployment controller will ensure that the current state matches the desired state.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx-web
+spec:  # ~ ReplicaSet spec
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-web
+  template:  # PodTemplateSpec
+    metadata:
+      labels:
+        app: nginx-web
+    spec:  # Pod spec
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+```
+
+## Hands-on
 
 Deployment is a higher-level abstraction that manages Pods and ReplicaSets.
 
@@ -925,7 +827,7 @@ pod/nginx-cb6645bd8-mhzdc   1/1     Running   0          36s
 pod/nginx-cb6645bd8-zsnl2   1/1     Running   0          36s
 ```
 
-## Inspecting a rollout
+### Inspecting a rollout
 
 Let's make a change in the Deployment to downgrade the image version of nginx to `1.28.0`, set value in yaml file: `image: nginx:1.28.0`
 
@@ -974,7 +876,7 @@ You can see that the new version of Deployment is running with the new image `ng
 
 Historical ReplicaSets are kept to allow rollbacks and to maintain a history of changes. Number of historical ReplicaSets can be controlled by the `revisionHistoryLimit` field in the Deployment spec. By default, it is set to 10.
 
-## Rollback
+### Rollback
 
 To rollback to the previous version of the Deployment, you can use the following command:
 
@@ -1018,7 +920,7 @@ pod/nginx-cb6645bd8-xqv26   1/1     Running   0          41s   10.244.1.26   min
 
 You can see that the Deployment is back to the previous version `nginx:1.29.0`, and the old ReplicaSet `nginx-6b66bfb4f` is no longer serving any Pods.
 
-## Rollouts - Declarative vs Imperative intermezzo
+### Rollouts - Declarative vs Imperative intermezzo
 
 In last example, we used imperative command to rollback the Deployment. However, it is recommended to use a declarative approach for managing Kubernetes resources.
 
@@ -1038,7 +940,52 @@ REVISION  CHANGE-CAUSE
 
 ---
 
-# Services
+# Service
+
+Exposes an application behind a single outward-facing endpoint, even when the workload is split across multiple backends.
+
+A Service provides a stable IP address and DNS name for a set of Pods, allowing them to be accessed consistently. A Service uses labels and selectors to select which Pods it will route traffic to.
+
+A Service can load balance traffic to multiple Pods, ensuring that the application is highly available and scalable.
+
+If you use a Deployment to run your app, that Deployment can create and destroy Pods dynamically. Because of that, you don't know the IP addresses of the Pods in advance. A Service provides a stable endpoint to access those Pods.
+
+Imagine a situation where you have two sets of pods representing backend and frontend of your application. As pods are ephemeral, you need a way to access the backend pods from the frontend pods without knowing and managing their IP addresses. For that, you can use a Service. which will serve as a single point of access to the backend pods.
+
+Service Types (How you expose your application):
+- ClusterIP: The default. Exposes the Service on an internal IP address. Only accessible from within the cluster.
+  - headless service if `.spec.clusterIP: "None"` 
+- NodePort: Exposes the Service on a static port on each Node's IP. Accessible from outside the cluster.
+- LoadBalancer: Exposes the Service externally using a cloud provider's load balancer.
+- ExternalName: Maps the Service to a DNS name, allowing you to access an external service by name.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-clusterip-service # Name of your Service
+  labels:
+    app: nginx-web # Label for the Service itself
+spec:
+  selector:
+    app: nginx-web # CRITICAL: This matches the 'app: nginx-web' label on your Pods
+  ports:
+    - protocol: TCP
+      port: 80 # The port this Service itself will listen on
+      targetPort: 80 # The port your container (Nginx) is listening on inside the Pod
+  type: ClusterIP # Explicitly setting ClusterIP, though it's the default
+```
+
+## Network model
+
+- every pod gets its own cluster-wide IP address
+- pod (cluster) network handles communication between pods
+- the service API provides a stable long-lived IP address and hostname for a service implemented in the pod
+  - k8s manages EndpointSlice objects to provide  
+- Gateways and Ingresses provide external access to services
+- Network policies can be used to control traffic between pods and between pods and external world
+
+## Hands-on
 
 Simple example of a Service: [nginx_service_clusterip.yaml](./examples/nginx_service_clusterip.yaml)
 
@@ -1086,7 +1033,7 @@ pod/nginx-cb6645bd8-fqd5q   1/1     Running   2               2d23h   10.244.1.3
 pod/nginx-cb6645bd8-g9gsc   1/1     Running   2 (5h11m ago)   2d23h   10.244.2.2   minikube-m03      <none>           <none>
 ```
 
-## Accessing the service
+### Accessing the service
 
 To access the service from within the cluster, you can use the service name as a DNS name. For example, if you have a Pod that is running in the same namespace, you can use the following command to access the service:
 
@@ -1099,23 +1046,76 @@ or use the proxy:
 See: http://127.0.0.1:8001/api/v1/namespaces/default/services/nginx-clusterip-service/proxy/
 (dont forget to start `kubectl proxy`)
 
-## Other service types
+### Other service types
 
-### NodePort
+#### NodePort
 
 See: [nodeport_service.md](additional_resources/nodeport_service)
 
-### ExternalName
+#### ExternalName
 
 See: [externalName_service.md](additional_resources/externalname_service.md)
 
-### LoadBalancer
+#### LoadBalancer
 
 See: [loadbalancer_service.md](additional_resources/loadbalancer_service.md)
 
 ---
 
 # Ingress
+
+An API object that manages external access to the services in a cluster, typically HTTP.
+
+An Ingress allows you to define rules for routing external HTTP/S traffic to specific services based on the request's host and path.
+
+In the image, there is an example of Ingress that routes traffic to one Service.
+
+![img.png](images/ingress.png)
+
+Additionally, ingress can be configured to give Services externally-reachable URLs, provide SSL termination, load balancing, and other features.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: / # Rewrites the request path to '/'
+spec:
+  ingressClassName: nginx # Important: Specifies which Ingress Controller handles this Ingress
+  rules:
+  - http:
+      paths:
+      - path: / # Route traffic for the root path
+        pathType: Prefix # Matches any path starting with '/'
+        backend:
+          service:
+            name: nginx-clusterip-service # The name of your ClusterIP Service
+            port:
+              number: 80 # The port of that Service
+    host: nginx.example.com # The hostname you'll use to access the service
+```
+
+## Ingress Controller
+
+In order to make Ingress work, you need to have an Ingress Controller running in your cluster. The Ingress Controller is responsible for fulfilling the Ingress rules and routing the traffic to the appropriate Services.
+
+Ingress Controllers are not part of the Kubernetes core, but are implemented as separate components. Ingress Controllers can be implemented using various technologies, such as NGINX, Traefik, HAProxy, or cloud provider-specific solutions.
+
+Kubernetes as a project supports and maintains AWS, GCE, and [nginx](https://github.com/kubernetes/ingress-nginx) ingress controllers.
+
+[ingress-nginx](https://github.com/kubernetes/ingress-nginx) project is being [discontinued](https://github.com/kubernetes/ingress-nginx/issues/13002) in favor of [ingate](https://github.com/kubernetes-sigs/ingate) project.
+
+
+
+## Gateway API
+
+It is designed to be a more flexible and extensible successor to the original `Ingress API`, providing advanced traffic management, better CRD extensibility, and improved support for modern networking use cases.
+`Gateway API` is still evolving and is not yet as widely adopted as `Ingress`, but it is intended to become the standard for service networking in Kubernetes.
+
+The `ingress-nginx` controller uses the original `Ingress API`, while `ingate` is designed to support the newer `Gateway API` in Kubernetes.
+
+## Hands-on
 
 Before you can use Ingress, you need to have an Ingress Controller running in your cluster. The Ingress Controller is responsible for fulfilling the Ingress rules and routing the traffic to the appropriate Services.
 
@@ -1142,18 +1142,18 @@ nginx   k8s.io/ingress-nginx   <none>       11m
 
 If you have ingress controller running, you skip the installation section.
 
-## Install ingress-nginx controller
+### Install ingress-nginx controller
 
 See: [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/) installation instructions
 
-### Installation in Minikube
+#### Installation in Minikube
 If you are using Minikube, you can enable the Ingress addon:
 
 ```bash
 minikube addons enable ingress
 ```
 
-### Installation in Minikube (lab environment specific)
+#### Installation in Minikube (lab environment specific)
 
 As we are using a multi-node Minikube cluster in our lab environment, we need to do some additional steps. We are using a special taint on the control plane node to prevent normal pods from scheduling there. Unfortunately, the ingress addon is not ready for that, so we need to remove that taint for a moment so that the ingress controller can be scheduled on the control plane node. In case you are working with different setup, you can skip this step.
 
@@ -1179,7 +1179,7 @@ There is additional step which is needed if you are using workshop labs. Because
 kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"externalIPs": ["192.168.49.2"], "externalTrafficPolicy": ""}}'
 ```
 
-### Installation using Helm:
+#### Installation using Helm:
 
 ```bash
 helm upgrade --install ingress-nginx ingress-nginx \
@@ -1187,17 +1187,17 @@ helm upgrade --install ingress-nginx ingress-nginx \
   --namespace ingress-nginx --create-namespace
 ```
 
-### Installation using kubectl:
+#### Installation using kubectl:
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.13.0/deploy/static/provider/cloud/deploy.yaml
 ```
 
-### Other methods
+#### Other methods
 
 You can also get ingress-nginx controller by installing specific addons (e.g. for minikube or MicroK8s) or they can be provided by your cloud provider.
 
-## Ingress example
+### Ingress example
 
 Simple example of an Ingress resource: [nginx_ingress.yaml](./examples/nginx_ingress.yaml)
 
@@ -1264,7 +1264,7 @@ For kubernetes on docker desktop you can also visit: http://localhost/
 
 NOTE: try different ingress rules, hostnames, paths, and path types.
 
-## Ingress rules, path types, wildcards and other details
+### Ingress rules, path types, wildcards and other details
 
 See: [ingress_details.md](additional_resources/ingress_details.md)
 
@@ -1395,7 +1395,7 @@ Finalizers can be added on a PersistentVolume to ensure that PersistentVolumes h
 
 From Kubernetes 1.33, 23rd April 2025, this is done automatically. 
 
-More on that: https://kubernetes.io/blog/2024/08/16/kubernetes-1-31-prevent-persistentvolume-leaks-when-deleting-out-of-order/]
+More on that: https://kubernetes.io/blog/2024/08/16/kubernetes-1-31-prevent-persistentvolume-leaks-when-deleting-out-of-order/
 
 ### ConfigMap
 
@@ -2106,7 +2106,7 @@ helm install my-first-chart ./my-first-chart -f ./my-first-chart/values.dev.yaml
 And in the production environment using:
 
 ```bash
-helm install my-first-chart ./my-first-chart -f ./my-first-chart/values.prod.yaml --namespace dev #--create-namespace
+helm install my-first-chart ./my-first-chart -f ./my-first-chart/values.prod.yaml --namespace prod #--create-namespace
 ```
 
 After that, you can check the pods in each namespace:
@@ -2453,7 +2453,7 @@ Let's demonstrate this process for our new user `Bob`. To add a new user to the 
     
     But this time it is because Alice's certificate is not recognized by the API server, so she is not authenticated at all. Don't get confused by `Unauthorized` error, it is not the same as `Forbidden` error. The `Unauthorized` error means that the user is not authenticated, while the `Forbidden` error means that the user is authenticated but does not have the necessary permissions to perform the action.
     
-    Another point of confusion could arise if we would try to impersonate bot `Bob` and `Alice` users using the `--as` flag in the `kubectl` command while using `minikube context.
+    Another point of confusion could arise if we would try to impersonate both `Bob` and `Alice` users using the `--as` flag in the `kubectl` command while using `minikube context.
     
     ```bash
     kubectl config use-context minikube
