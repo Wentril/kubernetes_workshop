@@ -940,6 +940,115 @@ REVISION  CHANGE-CAUSE
 
 ---
 
+# k9s — Terminal UI for Kubernetes
+
+`kubectl` is the workhorse for scripting and precise operations, but navigating a live cluster interactively — tailing logs, jumping between resources, watching rollouts — is much faster with `k9s`. It is a terminal UI that gives you a real-time view of your cluster and lets you act on resources with single keystrokes.
+
+## Install k9s
+
+Download and install the latest release:
+
+```bash
+curl -LO https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_amd64.tar.gz
+tar -xzf k9s_Linux_amd64.tar.gz
+sudo install -o root -g root -m 0755 k9s /usr/local/bin/k9s
+rm k9s_Linux_amd64.tar.gz
+```
+
+Verify the installation:
+
+```bash
+k9s version
+```
+
+```text
+ ____  __.________
+|    |/ _/   __   \______
+|      < \____    /  ___/
+|    |  \   /    /\___ \
+|____|__ \ /____//____  >
+        \/            \/
+
+Version:    v0.50.4
+Commit:     ...
+Date:       ...
+```
+
+k9s reads your existing `~/.kube/config`, so no additional setup is needed — it connects to whatever cluster `kubectl` is currently pointing to.
+
+## Basic usage
+
+Launch k9s:
+
+```bash
+k9s
+```
+
+The default view shows all pods in the current namespace. The interface looks like this:
+
+```text
+ Context: minikube         <a> Attach      <ctrl-d> Delete               ____  __.________
+ Cluster: minikube         <d> Describe    <e>      Edit                |    |/ _/   __   \______
+ User:    minikube         <l> Logs        <p>      Logs Previous       |      < \____    /  ___/
+ K9s Rev: v0.32.7          <s> Shell       <0>      all namespaces      |    |  \   /    /\___ \
+ CPU:10%  MEM:42%                                                       |____|__ \ /____//____  >
+                                                                                \/            \/
+┌────────────────────────── Pods(default)[3] ────────────────────────────────────────────────────┐
+│ NAME                    PF  READY  STATUS   RESTARTS  CPU  MEM   IP           NODE         AGE │
+│ nginx-cb6645bd8-bsldp   ●   1/1    Running  0         0m   2Mi   10.244.1.2   minikube-m02  3m │
+│ nginx-cb6645bd8-mhzdc   ●   1/1    Running  0         0m   2Mi   10.244.1.3   minikube-m02  3m │
+│ nginx-cb6645bd8-zsnl2   ●   1/1    Running  0         0m   2Mi   10.244.2.2   minikube-m03  3m │
+└────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Navigating resources
+
+Type `:` followed by a resource type to switch views:
+
+```text
+:pods          or  :po
+:deployments   or  :deploy
+:services      or  :svc
+:namespaces    or  :ns
+:nodes         or  :no
+:configmaps    or  :cm
+:secrets
+:ingresses     or  :ing
+```
+
+Press `Enter` to confirm. Use `↑`/`↓` (or `j`/`k`) to move through the list.
+
+To view resources across all namespaces, press `0`.
+
+### Essential shortcuts
+
+| Key | Action |
+|---|---|
+| `d` | Describe the selected resource |
+| `l` | Stream logs from the selected pod |
+| `e` | Open the resource in your editor (`$EDITOR`) |
+| `s` | Open a shell inside the selected pod |
+| `ctrl-d` | Delete the selected resource |
+| `/` | Filter the list by name |
+| `esc` | Go back / clear filter |
+| `enter` | Drill down into the resource |
+| `?` | Show all available shortcuts for the current view |
+| `ctrl-c` | Quit k9s |
+
+### Watching logs
+
+Select a pod and press `l` to tail its logs in real time. Press `w` to toggle line wrapping, `0` to show all containers in a multi-container pod, and `esc` to return to the pod list.
+
+### Filtering
+
+Press `/` and start typing to filter the current list. For example, in the pod view, typing `nginx` narrows the list to pods whose name contains `nginx`. Press `esc` to clear the filter.
+
+### Switching namespaces and contexts
+
+Press `:namespaces` (or `:ns`), select a namespace and press `Enter` to switch to it. To switch contexts, press `:contexts` (or `:ctx`).
+
+---
+
 # Service
 
 Exposes an application behind a single outward-facing endpoint, even when the workload is split across multiple backends.
