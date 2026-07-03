@@ -408,8 +408,68 @@ Not every persistent workload needs a StatefulSet. If your application:
 
 StatefulSets add operational complexity (PVC lifecycle, ordered operations). Only use them when the stable identity or ordered operations are genuinely required.
 
+## Known limitation: resizing volumeClaimTemplates storage
+
+A long-standing limitation of StatefulSets is that the `volumeClaimTemplates` field is effectively immutable after creation. Suppose you want to grow storage from `1Gi` to `2Gi` and update the manifest accordingly:
+
+```yaml
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 2Gi  # changed from 1Gi
+```
+
+Applying this produces an error:
+
+```bash
+kubectl apply -f examples/statefulset/nginx_statefulset.yaml
+```
+
+```text
+The StatefulSet "web" is invalid: spec.volumeClaimTemplates: Forbidden: updates to statefulset spec for fields other than 'replicas', 'ordinals', 'template', 'updateStrategy', 'persistentVolumeClaimRetentionPolicy' and 'minReadySeconds' are forbidden.
+```
+
+This is tracked in [kubernetes/kubernetes#68737](https://github.com/kubernetes/kubernetes/issues/68737), open since 2018. The root cause is that StatefulSet validation was never extended to allow `volumeClaimTemplates` changes even after PVC resizing became a supported feature in Kubernetes v1.11.
+
+**The practical impact:** if your database outgrows its initial storage allocation, you cannot simply edit the StatefulSet manifest and apply it.
+
+**Workaround:** revert the manifest back to `1Gi` (so `kubectl apply` stops failing), then resize each PVC directly:
+
+```bash
+kubectl edit pvc www-web-0
+# change spec.resources.requests.storage to 2Gi
+```
+
+Repeat for each pod's PVC (`www-web-1`, `www-web-2`, etc.). The StatefulSet itself does not need to be touched — the pods will automatically use the newly sized volumes once the underlying storage provider completes the resize. Note that this requires a StorageClass with `allowVolumeExpansion: true`.
+
+The consequence is that the manifest will still say `1Gi` while the actual PVCs on the cluster are `2Gi`. However, you can reconcile the discrepancy by deleting and recreating the StatefulSet — PVCs survive a StatefulSet deletion, so the recreated StatefulSet will simply adopt the existing (already resized) ones:
+
+```bash
+# 1. Delete the StatefulSet — pods are removed, PVCs are left intact
+kubectl delete statefulset web
+
+# 2. Update the manifest to the new size (2Gi) and apply
+kubectl apply -f examples/statefulset/nginx_statefulset.yaml
+```
+
+The StatefulSet comes back, the pods reconnect to their existing PVCs (now 2Gi), and the manifest matches the cluster state. Use `--cascade=orphan` if you want to keep pods running during the transition and avoid any downtime:
+
+```bash
+kubectl delete statefulset web --cascade=orphan
+# pods keep running while you apply the updated manifest
+kubectl apply -f examples/statefulset/nginx_statefulset.yaml
+```
+
+With `--cascade=orphan` the StatefulSet is deleted but its pods are left running as unmanaged orphans. Once you apply the updated manifest the new StatefulSet controller claims them back and reconciles normally.
+
 ## Further Reading
 
 - [Kubernetes StatefulSets documentation](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 - [Running a Replicated Stateful Application](https://kubernetes.io/docs/tasks/run-application/run-replicated-stateful-application/)
 - [StatefulSet Basics tutorial](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/)
+- [Issue #68737 — StatefulSet volumeClaimTemplates resize](https://github.com/kubernetes/kubernetes/issues/68737)

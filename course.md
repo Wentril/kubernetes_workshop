@@ -3520,6 +3520,12 @@ spec:
 
 This policy will isolate all pods in the cluster, including system pods in the `kube-system` namespace. This can lead to significant disruptions in cluster operations, as essential services like DNS, networking or API server communication may be blocked.
 
+### Further reading and tools
+
+- [Network Policy Editor](https://editor.networkpolicy.io/) — interactive visual editor for building and validating NetworkPolicy manifests, useful for understanding rule interactions before applying them to the cluster.
+- [Kubernetes Network Policies documentation](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
+- [Additional network policy examples](additional_resources/network_policies.md)
+
 ---
 
 ## Best practices for application management in Kubernetes
