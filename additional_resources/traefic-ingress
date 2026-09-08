@@ -1,0 +1,204 @@
+# Ingress with Traefik
+
+Traefik is an Ingress Controller. It can be configured either through standard Kubernetes `Ingress` objects, or through its own CRDs (`IngressRoute`, `Middleware`), which are installed as part of the Helm chart.
+
+## Install
+
+Add the Traefik Helm repo and install the chart into its own namespace:
+
+```bash
+helm repo add traefik https://traefik.github.io/charts
+helm repo update
+```
+
+```bash
+helm install traefik traefik/traefik \
+  --namespace traefik \
+  --create-namespace \
+  --set ports.web.exposedPort=80 \
+  --set ports.websecure.exposedPort=443
+```
+
+Check the controller and IngressClass were created:
+
+```bash
+kubectl get pods -n traefik
+kubectl get deployments -n traefik
+kubectl get ingressclass
+```
+
+Get the external address assigned to the Traefik service (a `LoadBalancer` IP/hostname on a full cluster):
+
+```bash
+kubectl get svc traefik -n traefik
+```
+
+## Option A: standard `Ingress` resource
+
+Traefik reads plain `Ingress` objects when `ingressClassName: traefik` is set. This is a drop-in replacement for the `ingress-nginx` example, routing to the same `nginx-clusterip-service`:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress-traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: nginx-traefik.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-clusterip-service
+            port:
+              number: 80
+```
+
+```bash
+kubectl apply -f examples/traefik/nginx_ingress_traefik.yaml
+kubectl get ingress
+kubectl describe ingress nginx-ingress-traefik
+```
+
+Point the hostname `nginx-traefik.example.com` at the external address of the Traefik service (via your DNS, or an `/etc/hosts` entry for local testing), then:
+
+```bash
+curl http://nginx-traefik.example.com
+```
+
+## Option B: native `IngressRoute` CRD
+
+`IngressRoute` replaces the `Ingress` object with a Traefik-specific resource, using Traefik's own rule matching syntax (`Host()`, `PathPrefix()`, etc.) instead of the `rules`/`paths` structure:
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: nginx-ingressroute
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`nginx-traefik.example.com`) && PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: nginx-clusterip-service
+          port: 80
+```
+
+```bash
+kubectl apply -f examples/traefik/nginx_ingressroute.yaml
+kubectl get ingressroute
+kubectl describe ingressroute nginx-ingressroute
+```
+
+### Path rewrite via `Middleware`
+
+`Middleware` is a separate CRD applied to routes for request/response manipulation. `stripPrefix` removes a path prefix before forwarding to the backend, equivalent to the `rewrite-target` annotation used with `ingress-nginx`:
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-prefix
+  namespace: default
+spec:
+  stripPrefix:
+    prefixes:
+      - /app
+```
+
+The middleware is referenced by name from the route that should use it:
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: nginx-ingressroute-rewrite
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`nginx-traefik.example.com`) && PathPrefix(`/app`)
+      kind: Rule
+      middlewares:
+        - name: strip-prefix
+      services:
+        - name: nginx-clusterip-service
+          port: 80
+```
+
+```bash
+kubectl apply -f examples/traefik/middleware_strip_prefix.yaml
+kubectl apply -f examples/traefik/nginx_ingressroute_rewrite.yaml
+curl http://nginx-traefik.example.com/app/
+```
+
+A request to `/app/` arrives at the Pod as `/`, since the prefix is stripped by the middleware.
+
+## Dashboard
+
+Traefik exposes a web dashboard on port 9000 inside the pod, showing configured routers, services, and middlewares. It is not exposed externally by the chart by default, so use port-forwarding:
+
+```bash
+kubectl port-forward -n traefik $(kubectl get pods -n traefik -l app.kubernetes.io/name=traefik -o jsonpath='{.items[0].metadata.name}') 9000:9000
+```
+
+`http://127.0.0.1:9000/dashboard/`
+
+## Cleanup
+
+```bash
+kubectl delete ingress nginx-ingress-traefik
+kubectl delete ingressroute nginx-ingressroute nginx-ingressroute-rewrite
+kubectl delete middleware strip-prefix
+helm uninstall traefik -n traefik
+kubectl delete namespace traefik
+```
+
+---
+
+## Minikube-specific notes
+
+Only relevant if running this module against a local Minikube cluster instead of a full cluster.
+
+### Multi-node taint workaround
+
+If the control-plane node has the `NoSchedule` taint (as used earlier for `ingress-nginx`), the Traefik pod cannot be scheduled unless the taint is temporarily removed:
+
+```bash
+kubectl taint nodes minikube node-role.kubernetes.io/control-plane:NoSchedule-
+helm install traefik traefik/traefik \
+  --namespace traefik \
+  --create-namespace \
+  --set ports.web.exposedPort=80 \
+  --set ports.websecure.exposedPort=443
+kubectl taint nodes minikube node-role.kubernetes.io/control-plane:NoSchedule
+```
+
+### Lab proxy patch
+
+Sets an external IP on the Traefik service so the lab's incoming proxy can reach it, same purpose as the equivalent patch on `ingress-nginx-controller`:
+
+```bash
+kubectl patch svc traefik -n traefik -p '{"spec": {"externalIPs": ["192.168.49.2"], "externalTrafficPolicy": ""}}'
+```
+
+### Resolving the hostname locally
+
+`LoadBalancer` services have no real external IP on Minikube, so use the Minikube node IP instead and add it to `/etc/hosts`:
+
+```bash
+minikube ip
+```
+
+```text
+192.168.49.2 nginx-traefik.example.com
+```
