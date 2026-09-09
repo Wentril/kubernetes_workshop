@@ -123,7 +123,7 @@ spec:
 ```
 ## HTTPRoute
 ```yaml
-piVersion: gateway.networking.k8s.io/v1
+apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: <app-route>
